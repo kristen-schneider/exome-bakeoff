@@ -2,32 +2,30 @@ import pysam
 import numpy as np
 import pandas as pd
 import pickle
-from os import path
+from os import path, makedirs
 import matplotlib.pyplot as plt
 import seaborn as sns
 import math
 import time
+import sys
+import re
+
 
 sns.set(style="whitegrid")
+
+
+"""
+Command line arguments
+1. Reference Genome (.fasta)
+2. Bam File (.bam)
+3. Regions File (.bed)
+"""
 
 
 """
 import os
 os.chdir('Analyses/Biases/GCBias')
 """
-
-# htslib
-# set up a conda env with a specific version of pysam
-# create a requirement.txt and list the version of everything we have used
-
-# read in reference genome
-# break reference into 100bp windows
-# calc % GC for each window
-# pickle this information
-
-# df or matrix (np array?)
-# X = 23, Y = 24, MT = 25, scaffold = 26
-# chromosome    start   end     %GC
 
 
 """
@@ -59,6 +57,13 @@ def read_fasta(fp):
     if name: yield (name, ''.join(seq))
 
 
+"""
+Give a fasta sequence header formatted like:
+>2 dna:chromosome chromosome:GRCh37:2:1:243199373:1
+Return the chromosome, the beginning position and the end position
+"""
+
+
 def get_chrom_begin_end(name):
     split_name = name.split(' ')
     chrom = split_name[0].replace('>', '')
@@ -72,15 +77,28 @@ def get_chrom_begin_end(name):
     return chrom, begin, fin
 
 
-def load_hg37_gc_df():
-    pickle_path = 'exome_bakeoff_hg37_gc_pd.pickle'
-    if not path.exists(pickle_path):
-        print('Generating HG 37 % GC info')
+"""
+Given the path to the reference sequence
+Break the reference into 100bp windows
+Calc the GC % of each window
+Return a pandas DataFrame each rowing representing a 100bp window and columns formatted as:
+Chromosome  Start   End     GC%
+"""
+
+
+def load_hg37_gc_df(ref):
+    # strip the path
+    filename = re.sub('.*/', '', ref)
+    # strip the file extension
+    extension_less_name = re.sub('\\.\\w*', '', filename)
+    cache_name = 'cache_' + extension_less_name + '.pickle'
+    if not path.exists(cache_name):
+        print('Generating Reference % GC info')
         chromosomes = []
         start = []
         end = []
         gc_percent = []
-        with open("/Users/michael/TESTBAMs/human_g1k_v37.fasta") as fp:
+        with open(ref) as fp:
             for name, seq in read_fasta(fp):
                 print(name)
                 c, b, e = get_chrom_begin_end(name)
@@ -96,11 +114,17 @@ def load_hg37_gc_df():
                 end = end + new_end.tolist()
                 chromosomes = chromosomes + new_chrom
         hg37gc_df = pd.DataFrame({'Chromosome': chromosomes, 'Start': start, 'End': end, 'GC%': gc_percent})
-        pickle.dump(hg37gc_df, open(pickle_path, 'wb'))
+        pickle.dump(hg37gc_df, open(cache_name, 'wb'))
         return hg37gc_df
     else:
-        print('Loading HG 37 % GC info')
-        return pickle.load(open(pickle_path, 'rb'))
+        print('Loading Reference Cache % GC info')
+        return pickle.load(open(cache_name, 'rb'))
+
+
+"""
+Given a pandas DataFrame output like the output of load_hg37_gc_df()
+Create a histogram with a density plot overlay of the number of 100 base windows found at each % GC bin
+"""
 
 
 def plot_hg37_gc_bias(df):
@@ -110,84 +134,128 @@ def plot_hg37_gc_bias(df):
     plt.savefig('hg37_gc_dist.png')
 
 
-df = load_hg37_gc_df()
-# plot_hg37_gc_bias(df)
+"""
+Give an df formated like the output of load_hg37_gc_df
+Return a dictionary with chromosomes as keys and a list containing 2 things as a value
+    0. a df of just that chromosome indexed by start location
+    1. a df of just that chromosome indexed by end location
+"""
 
 
-bam = pysam.AlignmentFile("/Users/michael/TESTBAMs/small-Twist-Roche-0720ME25_S5_L001.bqsr.bam", "rb")
+def create_dict_of_indexed_dfs(df):
+    chromosomes = [x for x in list(set(df['Chromosome'])) if x[0] != 'G' and x[0] != 'M']
+    dict_of_indexed_dfs = {}
+    for c in chromosomes:
+        temp_start = df[df['Chromosome'] == c]
+        temp_end = df[df['Chromosome'] == c]
+        temp_start.index = temp_start['Start']
+        temp_end.index = temp_start['End']
+        dict_of_indexed_dfs[c] = [temp_start, temp_end]
+    return dict_of_indexed_dfs
 
-# get the coverage of each window
 
-sec = 0
-pri = 0
-thing = None
+"""
+Given 
+1. dictionary formted like the output of create_dict_of_indexed_dfs, 
+2. the chromosome (string)
+3. start locations of the read (int)
+4. end locations of the read (int)
+Return a list containing 1 or 2 GC% (int)
+"""
 
-# filter reads down to only the primary alignment
-thing = None
-rnames = []
-gc_bins_coverage = np.zeros(100)
-chr_sub_set = None
-current_chr = None
-start = time.time()
-error_count = 0
-current = 0
-current_count = 0
-for r in bam:
-    if r.is_secondary:
-        # print('Secondary')
-        sec += 1
-        continue
-    # this is for a speed up, so boolean opperations are not performed across all chromosomes, only the one in question
-    # BAM files are sorted so this will only resolve true 23 times
-    if current_chr is not r.rname:
-        chr_sub_set = df[df['Chromosome'] == str(r.rname + 1)]
-        current_chr = r.rname
-        print('----' + str(r.rname) + '----')
-        print(time.time() - start)
-    # this is another speed up, every 10 thousand toss out the ones never to be needed again
-    # if current == 10000:
-    #     print('\t' + str(begin))
-    #     chr_sub_set = chr_sub_set[chr_sub_set['Start'] > r.pos]
-    #     current = 0
-    # else:
-    #     current += 1
-    pri += 1
-    begin = r.pos
-    width = len(r.seq)
-    # which bin the read beginning belongs in
-    start_df = chr_sub_set[(begin >= chr_sub_set['Start']) & (begin < chr_sub_set['End'])]
-    end_df = chr_sub_set[(begin+width >= chr_sub_set['Start']) & (begin+width < chr_sub_set['End'])]
+
+def get_gc_content(indexed_dic,chrom,start,end):
+    start_key = int(re.sub('\\w\\w$','01',str(start)))
+    end_key = int(re.sub('\\w\\w$', '01', str(start))) + 100
+    start_row = None
+    end_row = None
     try:
-        if int(start_df['Start']) == int(end_df['Start']):
-            # the start and end fall in the same window of the genome
-            start_percent = math.floor(start_df['GC%']*100)
-            gc_bins_coverage[start_percent] += 1
-        else:
-            # the start and end are in two different regions
-            start_percent = math.floor(start_df['GC%'] * 100)
-            gc_bins_coverage[start_percent] += 1
-            end_percent = math.floor(end_df['GC%'] * 100)
-            gc_bins_coverage[end_percent] += 1
-    except TypeError:
-        error_count += 1
-        print('----------------------------------------------------')
-        print('Type Error, probably in the if statement casting to an int')
-        print(start_df['Start'])
-        print('---')
-        print(end_df['Start'])
-        print('----------------------------------------------------')
+        start_row = indexed_dic[chrom][0][start_key]
+    except KeyError:
+        start_row = indexed_dic[chrom][0][(start >= indexed_dic[chrom][0]['Start']) & (start < indexed_dic[chrom][0]['End'])]
+
+    try:
+        end_row = indexed_dic[chrom][1][end_key]
+    except KeyError:
+        end_row = indexed_dic[chrom][1][(end >= indexed_dic[chrom][0]['Start']) & (end < indexed_dic[chrom][0]['End'])]
+
+    if int(end_row['Start']) != int(start_row['Start']):
+        return [int(start_row['GC%'] * 100), int(end_row['GC%']* 100)]
+    else:
+        return [int(start_row['GC%'] * 100)]
 
 
-print('Error Count' + str(error_count))
-print(time.time() - start)
+"""
+Given a reference genome file path, a bam file, a bed (or regions file) and the path for where results should be placed
+Filter the bam to only use portions included in the bed file
+Calculate normalized coverage across the reference genome % GC bins
+Outputs a tab separated file to results_dir/GCBias/NormalizedCoverage/<name of bam file>.tsv
+"""
 
-# calcualte normalized coverage (normalized to the mean)
-gc_mean = np.sum(gc_bins_coverage) / len(gc_bins_coverage)
-norm_gc = gc_bins_coverage / gc_mean
 
-gc_df = pd.DataFrame({'GC%':list(range(1,101)),'Coverage':gc_bins_coverage,'Normalized_coverage':norm_gc})
+def calc_gc_bias(ref, bam_file_path, bed, results_dir):
+    # load the reference genome broken up into 100bp section annotated with gc %
+    df = load_hg37_gc_df(ref)
+    index_dict = create_dict_of_indexed_dfs(df)
+    start = time.time()
+    gc_bins_coverage = np.zeros(100)
+    number_of_secondary_alignment_reads = 0
 
-gc_df.to_csv('example.tsv', sep='\t')
+    bam = pysam.AlignmentFile(bam_file_path, "rb")
+    for line in open(bed, 'r'):
+        print(line)
+        bed_line = line.split('\t')
+        contig = bed_line[0]
+        start = int(bed_line[1])
+        end = int(bed_line[2])
+        for f in bam.fetch(contig=contig, start=start, stop=end, until_eof=True):
+            if f.is_secondary:
+                number_of_secondary_alignment_reads += 1
+                continue
+            begin = f.pos
+            width = len(f.seq)
+            end = begin + width
+            # print(str(begin) + ' ' + str(end))
+            chr = f.rname
+            if chr == 22:
+                chr = 'X'
+            elif chr == 23:
+                chr = 'Y'
+            else:
+                chr = str(chr + 1)
+            gc_list = get_gc_content(index_dict, chr, begin, end)
+            for gc in gc_list:
+                gc_bins_coverage[gc] += 1
 
-print(sec)
-print(pri)
+    print('Duration: ' + str(time.time() - start))
+    print('Number of secondary alignments excluded: ' + str(number_of_secondary_alignment_reads))
+
+    # calculate normalized coverage (normalized to the mean)
+    gc_mean = np.sum(gc_bins_coverage) / len(gc_bins_coverage)
+    norm_gc = gc_bins_coverage / gc_mean
+
+    # create df of the GC bias data
+    gc_df = pd.DataFrame({'GC%': list(range(1, 101)), 'Coverage': gc_bins_coverage, 'Normalized_coverage': norm_gc})
+
+    # form the output file path
+    # strip the path
+    filename = re.sub('.*/', '', bam_file_path)
+    # strip the file extension2
+    extension_less_name = re.sub('\\.\\w*', '', filename)
+    if results_dir[-1] != '/':
+        results_dir += '/'
+    makedirs(results_dir)
+    makedirs(results_dir + 'GCBias/')
+    makedirs(results_dir + 'GCBias/NormalizedCoverage/')
+    outfile = results_dir + 'GCBias/NormalizedCoverage/' + extension_less_name + '.tsv'
+    gc_df.to_csv(outfile, sep='\t')
+
+
+if __name__ == "__main__":
+    ref = sys.argv[1]
+    bam = sys.argv[2]
+    bed = sys.argv[3]
+    results_dir = sys.argv[4]
+    calc_gc_bias(ref, bam, bed, results_dir)
+
+9
