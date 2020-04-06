@@ -10,9 +10,7 @@ import time
 import sys
 import re
 
-
 sns.set(style="whitegrid")
-
 
 """
 Command line arguments
@@ -21,12 +19,10 @@ Command line arguments
 3. Regions File (.bed)
 """
 
-
 """
 import os
 os.chdir('Analyses/Biases/GCBias')
 """
-
 
 """
 Given a DNA sequencing (assuming in all capital letters)
@@ -164,15 +160,16 @@ Return a list containing 1 or 2 GC% (int)
 """
 
 
-def get_gc_content(indexed_dic,chrom,start,end):
-    start_key = int(re.sub('\\w\\w$','01',str(start)))
+def get_gc_content(indexed_dic, chrom, start, end):
+    start_key = int(re.sub('\\w\\w$', '01', str(start)))
     end_key = int(re.sub('\\w\\w$', '01', str(start))) + 100
     start_row = None
     end_row = None
     try:
         start_row = indexed_dic[chrom][0][start_key]
     except KeyError:
-        start_row = indexed_dic[chrom][0][(start >= indexed_dic[chrom][0]['Start']) & (start < indexed_dic[chrom][0]['End'])]
+        start_row = indexed_dic[chrom][0][
+            (start >= indexed_dic[chrom][0]['Start']) & (start < indexed_dic[chrom][0]['End'])]
 
     try:
         end_row = indexed_dic[chrom][1][end_key]
@@ -180,7 +177,7 @@ def get_gc_content(indexed_dic,chrom,start,end):
         end_row = indexed_dic[chrom][1][(end >= indexed_dic[chrom][1]['Start']) & (end < indexed_dic[chrom][1]['End'])]
 
     if int(end_row['Start']) != int(start_row['Start']):
-        return [int(start_row['GC%'] * 100), int(end_row['GC%']* 100)]
+        return [int(start_row['GC%'] * 100), int(end_row['GC%'] * 100)]
     else:
         return [int(start_row['GC%'] * 100)]
 
@@ -244,18 +241,17 @@ def calc_gc_bias(ref, bam_file_path, bed, results_dir):
     extension_less_name = re.sub('\\.\\w*', '', filename)
     if results_dir[-1] != '/':
         results_dir += '/'
-    makedirs(results_dir)
-    makedirs(results_dir + 'GCBias/')
-    makedirs(results_dir + 'GCBias/NormalizedCoverage/')
+    makedirs(results_dir, exist_ok=True)
+    makedirs(results_dir + 'GCBias/', exist_ok=True)
+    makedirs(results_dir + 'GCBias/NormalizedCoverage/', exist_ok=True)
     outfile = results_dir + 'GCBias/NormalizedCoverage/' + extension_less_name + '.tsv'
     gc_df.to_csv(outfile, sep='\t')
 
 
 if __name__ == "__main__":
+    print(sys.argv)
     ref = sys.argv[1]
     bam = sys.argv[2]
     bed = sys.argv[3]
     results_dir = sys.argv[4]
     calc_gc_bias(ref, bam, bed, results_dir)
-
-9
