@@ -177,7 +177,7 @@ def get_gc_content(indexed_dic,chrom,start,end):
     try:
         end_row = indexed_dic[chrom][1][end_key]
     except KeyError:
-        end_row = indexed_dic[chrom][1][(end >= indexed_dic[chrom][0]['Start']) & (end < indexed_dic[chrom][0]['End'])]
+        end_row = indexed_dic[chrom][1][(end >= indexed_dic[chrom][1]['Start']) & (end < indexed_dic[chrom][1]['End'])]
 
     if int(end_row['Start']) != int(start_row['Start']):
         return [int(start_row['GC%'] * 100), int(end_row['GC%']* 100)]
