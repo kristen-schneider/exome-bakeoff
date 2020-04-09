@@ -14,14 +14,13 @@ def main_single_pileup(tbx_pileup_file, regions_file, metrics_options, sample_na
 
 def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
     # open files to store metrics for plotting
-    quality_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/quality/metric_files/" + sample_name + "-QUALITY.txt", 'a')
+    quality_output_txt = open("/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/metric_files/" + sample_name + "-QUALITY.txt", 'a')
     quality_output_txt.truncate(0)
 
     regions_file_read = open(regions_file, 'r')
 
     for region in regions_file_read:
         region = region.rstrip().split()
-
         # convert chrm, start, end to proper type
         try: region_chrm = int(region[0])
         except ValueError: region_chrm = region[0]
@@ -35,7 +34,6 @@ def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
                 q_chrm = row[0]
                 q_start = row[1]
                 q_end = row[2]
-                q_gene = row[4]
                 quality = main_quality(row)
                 # format: chrm, start, end, quality_score
-                quality_output_txt.write(q_chrm + '\t' + q_start + '\t' + q_end  + '\t' + str(quality) + '\t' + q_gene + '\n')
+                quality_output_txt.write(q_chrm + '\t' + q_start + '\t' + q_end  + '\t' + str(quality) + '\t' + region[4] + '\n')
