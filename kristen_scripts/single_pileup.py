@@ -35,7 +35,6 @@ def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
                 q_chrm = row[0]
                 q_start = row[1]
                 q_end = row[2]
-                q_gene = row[4]
                 quality = main_quality(row)
                 # format: chrm, start, end, quality_score
-                quality_output_txt.write(q_chrm + '\t' + q_start + '\t' + q_end  + '\t' + str(quality) + '\t' + q_gene + '\n')
+                quality_output_txt.write(q_chrm + '\t' + q_start + '\t' + q_end  + '\t' + str(quality) + '\t' + region[4] + '\n')
