@@ -6,7 +6,6 @@
 
 import pysam
 from quality import main_quality
-from tio import main_tio
 
 
 def main_single_pileup(tbx_pileup_file, regions_file, metrics_options):
