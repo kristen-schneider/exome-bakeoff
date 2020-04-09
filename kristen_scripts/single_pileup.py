@@ -14,7 +14,7 @@ def main_single_pileup(tbx_pileup_file, regions_file, metrics_options, sample_na
 
 def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
     # open files to store metrics for plotting
-    quality_output_txt = open("../Analyses/quality/metric_files/" + sample_name + "-QUALITY.txt", 'a')
+    quality_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/quality/metric_files/" + sample_name + "-QUALITY.txt", 'a')
     quality_output_txt.truncate(0)
 
     regions_file_read = open(regions_file, 'r')
@@ -30,6 +30,7 @@ def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
 
         # fetch regions
         for row in tbx_pileup_file.fetch(region_chrm, region_start, region_end, parser=pysam.asBed()):
+            print(row)
             if "quality" in metrics_options:
                 # get necessary values
                 q_chrm = row[0]
