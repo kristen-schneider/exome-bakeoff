@@ -30,13 +30,12 @@ def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
 
         # fetch regions
         for row in tbx_pileup_file.fetch(region_chrm, region_start, region_end, parser=pysam.asBed()):
-            print(row)
             if "quality" in metrics_options:
                 # get necessary values
                 q_chrm = row[0]
                 q_start = row[1]
                 q_end = row[2]
+                q_gene = row[4]
                 quality = main_quality(row)
-
                 # format: chrm, start, end, quality_score
-                quality_output_txt.write(q_chrm + '\t' + q_start + '\t' + q_end  + '\t' + str(quality) + '\n')
+                quality_output_txt.write(q_chrm + '\t' + q_start + '\t' + q_end  + '\t' + str(quality) + '\t' + q_gene + '\n')
