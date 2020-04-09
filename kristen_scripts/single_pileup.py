@@ -1,0 +1,42 @@
+# This script will take one input file (bam or pileup)...
+#...and pull it through all regions files
+#...and compute whatever metrics are requested of it
+# INPUT:(1) single bam OR single pileup
+#       (2) directory of regions files
+
+import pysam
+from quality import main_quality
+from tio import main_tio
+
+
+def main_single_pileup(tbx_pileup_file, regions_file, metrics_options):
+    read_regions(tbx_pileup_file, regions_file, metrics_options)
+
+
+def read_regions(tbx_pileup_file, regions_file, metrics_options):
+    # open files to store metrics for plotting
+    quality_output_txt = open("../quality_output.txt", 'a')
+    quality_output_txt.truncate(0)
+
+    regions_file_read = open(regions_file, 'r')
+
+    for region in regions_file_read:
+        region = region.rstrip().split()
+
+        # convert chrm, start, end to proper type
+        try: region_chrm = int(region[0])
+        except ValueError: region_chrm = region[0]
+        region_start = int(region[1])
+        region_end = int(region[2])
+
+        # fetch regions
+        for row in tbx_pileup_file.fetch(region_chrm, region_start, region_end, parser=pysam.asBed()):
+            if "quality" in metrics_options:
+                # get necessary values
+                q_chrm = row[0]
+                q_start = row[1]
+                q_end = row[2]
+                quality = main_quality(row)
+
+                # format: chrm, start, end, quality_score
+                quality_output_txt.write(q_chrm + '\t' + q_start + '\t' + q_end  + '\t' + str(quality) + '\n')
