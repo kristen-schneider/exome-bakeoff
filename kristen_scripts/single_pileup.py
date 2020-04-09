@@ -8,13 +8,13 @@ import pysam
 from quality import main_quality
 
 
-def main_single_pileup(tbx_pileup_file, regions_file, metrics_options):
-    read_regions(tbx_pileup_file, regions_file, metrics_options)
+def main_single_pileup(tbx_pileup_file, regions_file, metrics_options, sample_name):
+    read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name)
 
 
-def read_regions(tbx_pileup_file, regions_file, metrics_options):
+def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
     # open files to store metrics for plotting
-    quality_output_txt = open("../quality_output.txt", 'a')
+    quality_output_txt = open("../Analyses/quality/metric_files/" + sample_name + "-QUALITY.txt", 'a')
     quality_output_txt.truncate(0)
 
     regions_file_read = open(regions_file, 'r')
