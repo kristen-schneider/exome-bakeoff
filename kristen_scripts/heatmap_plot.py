@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 
 heatmap_metrics_path = '/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/heatmap_metrics/'
+heatmaps_path = '/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/heatmaps/'
 TITLE = 'Quality'
 
 def main_heatmap():
@@ -50,7 +51,7 @@ def plot_heatmap(sample_names, gene_names, all_sample_metrcis, title):
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     plt.imshow(all_sample_metrcis)
     plt.colorbar(cmap='cold')
-    plt.savefig(title+'.png', dpi=100)
+    plt.savefig(heatmaps_path + title+'.png', dpi=100)
 
 
 
