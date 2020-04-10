@@ -1,8 +1,8 @@
 import os
 import numpy as np
 
-sample_qualities_path = '/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/metric_files/'
-hm_metrics_path = '/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/heatmap_metrics/'
+sample_qualities_path = '/Shares/layer_shared/projects/chco/exome-bakeoff/Analyses/quality/metric_files/'
+hm_metrics_path = '/Shares/layer_shared/projects/chco/exome_bakeoff/Analyses/quality/heatmap_metrics/'
 
 def write_quality_per_gene():
     for sample in os.listdir(sample_qualities_path):

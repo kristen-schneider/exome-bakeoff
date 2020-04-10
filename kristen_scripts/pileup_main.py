@@ -21,10 +21,10 @@ def main_pileup():
     # for each pileup file, call metrics script for all regions
     for pileup_file in os.listdir(pileup_path[0]):
         if (".bed" in pileup_file) and (".tbi" not in pileup_file):
-
+            print(pileup_path[0] + pileup_file)
             sample_name = pileup_file.split('.')[0]
             # tabix the pileupfile for easy search
-            tbx_pileup_file = pysam.TabixFile(pileup_path[0] + '/' + pileup_file)
+            tbx_pileup_file = pysam.TabixFile(pileup_path[0] + pileup_file)
 
             main_single_pileup(tbx_pileup_file, regions_file[0], metrics_options, sample_name)
             
