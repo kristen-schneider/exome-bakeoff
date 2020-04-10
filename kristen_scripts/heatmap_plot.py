@@ -50,7 +50,7 @@ def plot_heatmap(sample_names, gene_names, all_sample_metrcis, title):
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     plt.imshow(all_sample_metrcis)
     plt.colorbar(cmap='cold')
-    plt.savefig(title+'.png', dpi=300)
+    plt.savefig(title+'.png', dpi=100)
 
 
 
