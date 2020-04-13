@@ -1,0 +1,3 @@
+run this command on commandline (or can add to fiji script)
+
+for i in $(cat acmg_genes.txt); do grep -w ${i} Homo_sapiens.GRCh37.82.exons.bed > ${i}.bed; done
