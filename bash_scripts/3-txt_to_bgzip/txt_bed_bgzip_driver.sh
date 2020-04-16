@@ -8,8 +8,8 @@
 #SBATCH --output=/Users/krsc0813/exome-bakeoff/bash_scripts/3-txt_to_bgzip/conversion_logs/txt_bed_bgzip_driver.out
 #SBATCH --error=/Users/krsc0813/exome-bakeoff/bash_scripts/3-txt_to_bgzip/conversion_logs/txt_bed_bgzip_driver.err
 
-txt_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_downsample/'
-output_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_downsample/'
+in_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_downsample/'
+out_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_downsample/'
 
 # create the out dir if not exists
 test ! -d $out_dir && mkdir -p $out_dir
