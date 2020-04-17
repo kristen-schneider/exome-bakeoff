@@ -8,16 +8,16 @@ import sys
 from os import makedirs
 
 
-def plot_by_tech(df,col,fig_name):
+def plot_by_tech(df, col, y_col, y_lab, fig_name):
     # rgba based color schemes to make colors semi transparent
     # pale = [(.07,.46,.2,.5), (.2,.14,.53,.5),(.86,.8,.46,.5),(.8,.4,.46,.5),(.53,.01,.33,.5),(.54,.8,.93,.5)]
     # opacity = .8
     # colors = [(230/255,159/255,3/255,opacity),(86/255,180/255,233/255,opacity),(5/255,158/255,115/255,opacity),(3/255,114/255,178/255,opacity),(213/255,94/255,0,opacity),(204/255,121/255,167/255,opacity)]
-    colors = ['r','g','b','orange','purple','y']
-    widths = [6,5,4,3,2,1]
+    colors = ['r', 'g', 'b', 'orange', 'purple', 'y']
+    widths = [6, 5, 4, 3, 2, 1]
     samples = list(set(df[col]))
     # create dictionaries of the group and the color / width of their lines
-    color_map = { samples[i]:colors[i] for i in range(len(samples))}
+    color_map = {samples[i]: colors[i] for i in range(len(samples))}
     width_map = {samples[i]: widths[i] for i in range(len(samples))}
     custom_lines = []
 
@@ -27,7 +27,8 @@ def plot_by_tech(df,col,fig_name):
         sub = df[df[col] == sample]
         for s in list(set(sub['SAMPLE'])):
             subsub = sub[sub['SAMPLE'] == s]
-            ax.plot(subsub['percent'], subsub['ref_bin_normed_count'],color=color_map[sample],linewidth=width_map[sample])
+            ax.plot(subsub['percent'], subsub[y_col], color=color_map[sample],
+                    linewidth=width_map[sample])
 
     # Hide the right and top spines
     ax.spines['right'].set_visible(False)
@@ -38,7 +39,11 @@ def plot_by_tech(df,col,fig_name):
     ax.xaxis.set_ticks_position('bottom')
 
     plt.legend(custom_lines, samples, frameon=False, loc='upper left')
-    plt.savefig(fig_name,dpi=300)
+    plt.xlabel('% GC')
+    plt.ylabel(y_lab)
+
+    plt.savefig(fig_name, dpi=300)
+    plt.clf()
 
 
 """
@@ -100,8 +105,11 @@ def make_plots(csv_dir, results_dir):
     plt.savefig(results_dir + 'ribbon-gc_bias-capture_technology.png')
     plt.clf()
 
-    plot_by_tech(data, 'tech_one', results_dir + 'gc_bias_library_prep.png')
-    plot_by_tech(data, 'tech_two', results_dir + 'gc_bias_capture_technology.png')
+    plot_by_tech(data, 'tech_one', 'ref_bin_normed_count', 'Normalized Read Count', results_dir + 'gc_bias_library_prep.png')
+    plot_by_tech(data, 'tech_two', 'ref_bin_normed_count', 'Normalized Read Count', results_dir + 'gc_bias_capture_technology.png')
+
+    plot_by_tech(data, 'tech_one', 'count', 'Read Count', results_dir + 'raw_coverage_gc_bias_library_prep.png')
+    plot_by_tech(data, 'tech_two', 'count', 'Read Count', results_dir + 'raw_coverage_gc_bias_capture_technology.png')
 
 
 if __name__ == "__main__":

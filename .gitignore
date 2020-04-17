@@ -6,6 +6,7 @@ Analyses/Biases/.DS_Store
 Results/*
 /Users/krsc0813/exome-bakeoff/59_ACMG/59_bed
 /Users/krsc0813/exome-bakeoff/germline_bad
+/delete
 .bam
 .bai
 .cram
