@@ -168,7 +168,7 @@ Creates a line plot based on the give parameters and saves it
 """
 
 
-def plot_by_tech(df, group_col, y_col, y_lab, fig_name):
+def plot_by_tech(df, group_col, y_col, y_lab, fig_name,scale=1):
     # rgba based color schemes to make colors semi transparent
     # pale = [(.07,.46,.2,.5), (.2,.14,.53,.5),(.86,.8,.46,.5),(.8,.4,.46,.5),(.53,.01,.33,.5),(.54,.8,.93,.5)]
     # opacity = .8
@@ -187,7 +187,7 @@ def plot_by_tech(df, group_col, y_col, y_lab, fig_name):
         sub = df[df[group_col] == sample]
         for s in list(set(sub['SAMPLE'])):
             subsub = sub[sub['SAMPLE'] == s]
-            subsub[y_col] = [x / 1000 for x in subsub[y_col]]
+            subsub[y_col] = [x / scale for x in subsub[y_col]]
             ax.plot(subsub['percent'], subsub[y_col], color=color_map[sample],
                     linewidth=width_map[sample])
 
@@ -258,8 +258,8 @@ def make_plots(csv_dir, results_dir, ref_bin_counts):
     plot_by_tech(data, 'tech_two', 'ref_bin_normed_count', 'Normalized Read Count',
                  results_dir + 'gc_bias_capture_technology.png')
 
-    plot_by_tech(data, 'tech_one', 'count', 'Read count (thousands)', results_dir + 'raw_coverage_gc_bias_library_prep.png')
-    plot_by_tech(data, 'tech_two', 'count', 'Read count (thousands)', results_dir + 'raw_coverage_gc_bias_capture_technology.png')
+    plot_by_tech(data, 'tech_one', 'count', 'Read count (thousands)', results_dir + 'raw_coverage_gc_bias_library_prep.png',1000)
+    plot_by_tech(data, 'tech_two', 'count', 'Read count (thousands)', results_dir + 'raw_coverage_gc_bias_capture_technology.png',1000)
 
 
 """
