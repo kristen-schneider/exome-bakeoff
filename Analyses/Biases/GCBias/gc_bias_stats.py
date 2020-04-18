@@ -187,6 +187,7 @@ def plot_by_tech(df, group_col, y_col, y_lab, fig_name):
         sub = df[df[group_col] == sample]
         for s in list(set(sub['SAMPLE'])):
             subsub = sub[sub['SAMPLE'] == s]
+            subsub[y_col] = [x / 1000 for x in subsub[y_col]]
             ax.plot(subsub['percent'], subsub[y_col], color=color_map[sample],
                     linewidth=width_map[sample])
 
@@ -257,8 +258,8 @@ def make_plots(csv_dir, results_dir, ref_bin_counts):
     plot_by_tech(data, 'tech_two', 'ref_bin_normed_count', 'Normalized Read Count',
                  results_dir + 'gc_bias_capture_technology.png')
 
-    plot_by_tech(data, 'tech_one', 'count', 'Read Count', results_dir + 'raw_coverage_gc_bias_library_prep.png')
-    plot_by_tech(data, 'tech_two', 'count', 'Read Count', results_dir + 'raw_coverage_gc_bias_capture_technology.png')
+    plot_by_tech(data, 'tech_one', 'count', 'Read count (thousands)', results_dir + 'raw_coverage_gc_bias_library_prep.png')
+    plot_by_tech(data, 'tech_two', 'count', 'Read count (thousands)', results_dir + 'raw_coverage_gc_bias_capture_technology.png')
 
 
 """
