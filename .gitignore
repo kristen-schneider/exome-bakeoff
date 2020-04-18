@@ -7,6 +7,7 @@ Results/*
 /Users/krsc0813/exome-bakeoff/59_ACMG/59_bed
 /Users/krsc0813/exome-bakeoff/germline_bad
 /delete
+__pycache__
 .bam
 .bai
 .cram
