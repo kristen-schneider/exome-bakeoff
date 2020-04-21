@@ -10,7 +10,8 @@ import re
 import numpy as np
 import sys
 
-sns.set(style="whitegrid")
+sns.set_style("whitegrid", {'axes.grid' : False})
+
 
 """
 Command line arguments
@@ -318,6 +319,7 @@ def plot_59_genes_reference_gc_bias(bed, ref, res):
     ax2.grid(False)
     ax.set_ylabel('Reference genome count (thousands)')
     ax2.set_ylabel('59 Genes count')
+    ax.set_xlabel('% GC')
     if res[-1] != '/':
         res += '/'
     plt.savefig(res + 'gc_bias_reference_and_59_genes.png')
