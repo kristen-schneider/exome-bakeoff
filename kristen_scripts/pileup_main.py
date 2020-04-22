@@ -8,14 +8,14 @@
 import argparse
 import os
 import pysam
-from single_pileup import main_single_pileup
+from single_pileup_2 import main_single_pileup
 
 def main_pileup():
     # store arguments from command line
     args = get_cmdln_arguments()
 
     pileup_path = args['p']
-    regions_file = args['r']
+    regions_path = args['r']
     metrics_options = args['m']
 
     # for each pileup file, call metrics script for all regions
@@ -26,7 +26,7 @@ def main_pileup():
             # tabix the pileupfile for easy search
             tbx_pileup_file = pysam.TabixFile(pileup_path[0] + pileup_file)
 
-            main_single_pileup(tbx_pileup_file, regions_file[0], metrics_options, sample_name)
+            main_single_pileup(tbx_pileup_file, regions_path[0], metrics_options, sample_name)
             
 
 
