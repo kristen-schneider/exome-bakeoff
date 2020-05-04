@@ -32,8 +32,8 @@ def read_pandas():
     gapminder = pd.read_csv(panda_file)
     print(gapminder.head(3))
     heatmap_data = pd.pivot_table(gapminder, values='quality',
-                                  index=['gene'],
-                                  columns='sample')
+                                  index=['sample'],
+                                  columns='gene')
     print(heatmap_data.head())
     sns.clustermap(heatmap_data)
     plt.savefig('heatmap_with_Seaborn_clustermap_python.png',
@@ -45,7 +45,7 @@ def make_pandas_file():
     pandas_file.write('sample' + ',' + 'gene' + ',' + 'quality' + '\n')
 
     for sample in os.listdir(TXTFILES):
-        sample_name = ('-'.join(sample.split('-')[0:3]))
+        sample_name = ('-'.join(sample.split('-')[0:2]))
 
         s = open(TXTFILES + sample, 'r')
         for line in s:
