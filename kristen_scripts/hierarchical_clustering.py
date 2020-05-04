@@ -13,7 +13,7 @@ from sklearn.cluster import AgglomerativeClustering
 ## https://cmdlinetips.com/2020/01/heatmaps-with-seaborns-clustermap/
 
 TXTFILES = '/Users/kristen/PycharmProjects/exome-bakeoff/txtFiles/heatmap_metrics/'
-panda_file = '/Users/kristen/PycharmProjects/exome-bakeoff/quality-pandas.csv'
+panda_file = '/Users/kristen/PycharmProjects/exome-bakeoff/kristen_scripts/quality-pandas.csv'
 test_array = [[0,0,0],[0,0,0],[0,0,0],[1,1,1],[0,1,1],[0,0,1]]
 
 
@@ -35,9 +35,12 @@ def read_pandas():
                                   index=['sample'],
                                   columns='gene')
     print(heatmap_data.head())
-    sns.clustermap(heatmap_data)
+    sns.clustermap(heatmap_data,
+                   figsize=(20,30)
+
+                   )
     plt.savefig('heatmap_with_Seaborn_clustermap_python.png',
-                dpi=150, figsize=(8, 12))
+                dpi=200, figsize=(10, 10))
 
 def make_pandas_file():
     pandas_file = open('quality-pandas.csv', 'a')
@@ -45,7 +48,7 @@ def make_pandas_file():
     pandas_file.write('sample' + ',' + 'gene' + ',' + 'quality' + '\n')
 
     for sample in os.listdir(TXTFILES):
-        sample_name = ('-'.join(sample.split('-')[0:2]))
+        sample_name = ('-'.join(sample.split('-')[0:3]))
 
         s = open(TXTFILES + sample, 'r')
         for line in s:
