@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-heatmap_metrics_path = '/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/heatmap_metrics/'
-heatmaps_path = '/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/heatmaps/'
+heatmap_metrics_path = '/Users/krsc0813/exome-bakeoff/Analyses/quality/heatmap_metrics/'
+heatmaps_path = '/Users/krsc0813/exome-bakeoff/Analyses/quality/'
 TITLE = 'Quality'
 
 def main_heatmap():

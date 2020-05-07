@@ -13,6 +13,7 @@ def main_single_pileup(tbx_pileup_file, regions_file, metrics_options, sample_na
 
 
 def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
+
     # open files to store metrics for plotting
     quality_output_txt = open("/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/metric_files/" + sample_name + "-QUALITY.txt", 'a')
     quality_output_txt.truncate(0)
