@@ -247,7 +247,7 @@ def make_plots(ref, bed, csv_dir, results_dir, ref_bin_counts):
                                  group_col='tech_one',
                                  y_col='ref_bin_normed_count',
                                  y_lab='Normalized Read Count',
-                                 fig_name='gc_bias_library_prep.png',
+                                 fig_name=results_dir+'gc_bias_library_prep.png',
                                  scale=1)
     make_single_multi_layer_plot(bed=bed,
                                  ref=ref,
@@ -255,7 +255,7 @@ def make_plots(ref, bed, csv_dir, results_dir, ref_bin_counts):
                                  group_col='tech_two',
                                  y_col='ref_bin_normed_count',
                                  y_lab='Normalized Read Count',
-                                 fig_name='gc_bias_capture_technology.png',
+                                 fig_name=results_dir+'gc_bias_capture_technology.png',
                                  scale=1)
     make_single_multi_layer_plot(bed=bed,
                                  ref=ref,
@@ -263,7 +263,7 @@ def make_plots(ref, bed, csv_dir, results_dir, ref_bin_counts):
                                  group_col='tech_one',
                                  y_col='count',
                                  y_lab='Read count (thousands)',
-                                 fig_name='raw_coverage_gc_bias_library_prep.png',
+                                 fig_name=results_dir+'raw_coverage_gc_bias_library_prep.png',
                                  scale=1000)
     make_single_multi_layer_plot(bed=bed,
                                  ref=ref,
@@ -271,7 +271,7 @@ def make_plots(ref, bed, csv_dir, results_dir, ref_bin_counts):
                                  group_col='tech_two',
                                  y_col='count',
                                  y_lab='Read count (thousands)',
-                                 fig_name='raw_coverage_gc_bias_capture_technology.png',
+                                 fig_name=results_dir+'raw_coverage_gc_bias_capture_technology.png',
                                  scale=1000)
 
 
@@ -385,12 +385,6 @@ def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig
     df['norm_59'] = df['59 genes count'] / sum(df['59 genes count'])
     plotting_df = pd.DataFrame({'Reference Genome': list(df['norm_ref']), '59 Genes': list(df['norm_59'])})
 
-    ax = plotting_df.plot.line()
-    ax2 = ax.twinx()
-    ax.set_xlabel('Percent GC')
-    ax.set_ylabel('Normalized Coverage')
-    ax2.set_ylabel('Read Count (thousands)')
-
     colors = ['r', 'g', 'b', 'orange', 'purple', 'y']
     widths = [6, 5, 4, 3, 2, 1]
     samples = list(set(tech_df[group_col]))
@@ -399,15 +393,21 @@ def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig
     width_map = {samples[i]: widths[i] for i in range(len(samples))}
     custom_lines = []
 
-    # ax = plt.subplot(111)
+    ax = plt.subplot(111)
     for sample in samples:
         custom_lines.append(Line2D([0], [0], color=color_map[sample], lw=4))
         sub = tech_df[tech_df[group_col] == sample]
         for s in list(set(sub['SAMPLE'])):
             subsub = sub[sub['SAMPLE'] == s]
             subsub[y_col] = [x / scale for x in subsub[y_col]]
-            ax2.plot(subsub['percent'], subsub[y_col], color=color_map[sample],
+            ax.plot(subsub['percent'], subsub[y_col], color=color_map[sample],
                      linewidth=width_map[sample])
+
+    ax2 = ax.twinx()
+    ax2 = plotting_df.plot.line(ax=ax2)
+    ax2.set_xlabel('Percent GC')
+    ax2.set_ylabel('Normalized Coverage')
+    ax.set_ylabel('Read Count (thousands)')
 
     # Hide the right and top spines
     ax.spines['right'].set_visible(False)
@@ -416,8 +416,10 @@ def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig
     # Only show ticks on the left and bottom spines
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
+    ax.legend(loc='upper left')
+    # ax2.legend(loc='upper right')
 
-    plt.legend(custom_lines, samples, frameon=False, loc='upper left')
+    # plt.legend(custom_lines, samples, frameon=False, loc='upper left')
     plt.xlabel('% GC')
     plt.ylabel(y_lab)
     plt.savefig(fig_name)
