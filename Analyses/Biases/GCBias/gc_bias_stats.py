@@ -10,20 +10,7 @@ import re
 import numpy as np
 import sys
 
-sns.set_style("whitegrid", {'axes.grid' : False})
-
-
-"""
-Command line arguments
-1. Reference Genome (.fasta)
-2. Bam File (.bam)
-3. Regions File (.bed)
-"""
-
-"""
-import os
-os.chdir('Analyses/Biases/GCBias')
-"""
+sns.set_style("whitegrid", {'axes.grid': False})
 
 """
 Given a DNA sequencing (assuming in all capital letters)
@@ -169,7 +156,7 @@ Creates a line plot based on the give parameters and saves it
 """
 
 
-def plot_by_tech(df, group_col, y_col, y_lab, fig_name,scale=1):
+def plot_by_tech(df, group_col, y_col, y_lab, fig_name, scale=1):
     # rgba based color schemes to make colors semi transparent
     # pale = [(.07,.46,.2,.5), (.2,.14,.53,.5),(.86,.8,.46,.5),(.8,.4,.46,.5),(.53,.01,.33,.5),(.54,.8,.93,.5)]
     # opacity = .8
@@ -215,7 +202,7 @@ results_dir - path to directory the figures should be saved
 """
 
 
-def make_plots(csv_dir, results_dir, ref_bin_counts):
+def make_plots(ref, bed, csv_dir, results_dir, ref_bin_counts):
     # add a back slash to the of the dirs in case there is no one already
     if results_dir[-1] != '/':
         results_dir += '/'
@@ -254,13 +241,38 @@ def make_plots(csv_dir, results_dir, ref_bin_counts):
     data['tech_one'] = [re.sub('-.*-.*', '', x) for x in list(data['SAMPLE'])]
     data['tech_two'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(data['SAMPLE'])]
 
-    plot_by_tech(data, 'tech_one', 'ref_bin_normed_count', 'Normalized Read Count',
-                 results_dir + 'gc_bias_library_prep.png')
-    plot_by_tech(data, 'tech_two', 'ref_bin_normed_count', 'Normalized Read Count',
-                 results_dir + 'gc_bias_capture_technology.png')
-
-    plot_by_tech(data, 'tech_one', 'count', 'Read count (thousands)', results_dir + 'raw_coverage_gc_bias_library_prep.png',1000)
-    plot_by_tech(data, 'tech_two', 'count', 'Read count (thousands)', results_dir + 'raw_coverage_gc_bias_capture_technology.png',1000)
+    make_single_multi_layer_plot(bed=bed,
+                                 ref=ref,
+                                 tech_df=data,
+                                 group_col='tech_one',
+                                 y_col='ref_bin_normed_count',
+                                 y_lab='Normalized Read Count',
+                                 fig_name='gc_bias_library_prep.png',
+                                 scale=1)
+    make_single_multi_layer_plot(bed=bed,
+                                 ref=ref,
+                                 tech_df=data,
+                                 group_col='tech_two',
+                                 y_col='ref_bin_normed_count',
+                                 y_lab='Normalized Read Count',
+                                 fig_name='gc_bias_capture_technology.png',
+                                 scale=1)
+    make_single_multi_layer_plot(bed=bed,
+                                 ref=ref,
+                                 tech_df=data,
+                                 group_col='tech_one',
+                                 y_col='count',
+                                 y_lab='Read count (thousands)',
+                                 fig_name='raw_coverage_gc_bias_library_prep.png',
+                                 scale=1000)
+    make_single_multi_layer_plot(bed=bed,
+                                 ref=ref,
+                                 tech_df=data,
+                                 group_col='tech_two',
+                                 y_col='count',
+                                 y_lab='Read count (thousands)',
+                                 fig_name='raw_coverage_gc_bias_capture_technology.png',
+                                 scale=1000)
 
 
 """
@@ -327,6 +339,91 @@ def plot_59_genes_reference_gc_bias(bed, ref, res):
     return og_ref_gc_bin_counts
 
 
+def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig_name, scale):
+    bed_df = pd.read_csv(bed, sep='\t')
+    bed_gc_bin_counts = np.zeros(101)
+    ref_gc_bin_counts = np.zeros(101)
+    # read in genome one chromosome / line at a time
+    for name, seq in read_fasta(open(ref)):
+        c, b, e = get_chrom_begin_end(name)
+        # get the info from the bed that is part of the current chromosome
+        sub_df = bed_df[bed_df.iloc[:, 0] == c]
+
+        # check if the bed needs any information from this chromosome
+        if sub_df.shape[0] == 0:
+            continue
+
+        # break the reference into 100 bp section and bin them based on gc content
+        for i in range(0, len(seq), 100):
+            sub_string = seq[i: i + 100]
+            dec_gc = calc_percent_gc(sub_string)
+            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+            gc = int((dec_gc + .001) * 100)
+            ref_gc_bin_counts[gc] += 1
+
+        # get a strings of each portion of the bed and calc the gc content of that string
+        for i in range(sub_df.shape[0]):
+            start = sub_df.iloc[i, 1]
+            end = sub_df.iloc[i, 2]
+            string_start = b + start
+            string_end = b + end
+            # break the string into 100 bp sections
+            for j in range(string_start, string_end, 100):
+                sub_string = seq[j: j + 100]
+                dec_gc = calc_percent_gc(sub_string)
+                # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+                gc = int((dec_gc + .001) * 100)
+                bed_gc_bin_counts[gc] += 1
+    og_ref_gc_bin_counts = ref_gc_bin_counts.copy()
+    ref_gc_bin_counts = [x / 1000 for x in ref_gc_bin_counts]
+
+    df = pd.DataFrame(
+        {'Percent': list(range(0, 101)), 'reference count': ref_gc_bin_counts, '59 genes count': bed_gc_bin_counts})
+    df = df[df['Percent'] > 0]
+
+    df['norm_ref'] = df['reference count'] / sum(df['reference count'])
+    df['norm_59'] = df['59 genes count'] / sum(df['59 genes count'])
+    plotting_df = pd.DataFrame({'Reference Genome': list(df['norm_ref']), '59 Genes': list(df['norm_59'])})
+
+    ax = plotting_df.plot.line()
+    ax2 = ax.twinx()
+    ax.set_xlabel('Percent GC')
+    ax.set_ylabel('Normalized Coverage')
+    ax2.set_ylabel('Read Count (thousands)')
+
+    colors = ['r', 'g', 'b', 'orange', 'purple', 'y']
+    widths = [6, 5, 4, 3, 2, 1]
+    samples = list(set(tech_df[group_col]))
+    # create dictionaries of the group and the color / width of their lines
+    color_map = {samples[i]: colors[i] for i in range(len(samples))}
+    width_map = {samples[i]: widths[i] for i in range(len(samples))}
+    custom_lines = []
+
+    # ax = plt.subplot(111)
+    for sample in samples:
+        custom_lines.append(Line2D([0], [0], color=color_map[sample], lw=4))
+        sub = tech_df[tech_df[group_col] == sample]
+        for s in list(set(sub['SAMPLE'])):
+            subsub = sub[sub['SAMPLE'] == s]
+            subsub[y_col] = [x / scale for x in subsub[y_col]]
+            ax2.plot(subsub['percent'], subsub[y_col], color=color_map[sample],
+                     linewidth=width_map[sample])
+
+    # Hide the right and top spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+    # Only show ticks on the left and bottom spines
+    ax.yaxis.set_ticks_position('left')
+    ax.xaxis.set_ticks_position('bottom')
+
+    plt.legend(custom_lines, samples, frameon=False, loc='upper left')
+    plt.xlabel('% GC')
+    plt.ylabel(y_lab)
+    plt.savefig(fig_name)
+    plt.clf()
+
+
 """
 Given
 ref - path to reference genome
@@ -383,7 +480,7 @@ def run_gc_bias_analysis(ref, bams, beds, results_dir):
     print('generating reference and region plot')
     ref_bin_counts = plot_59_genes_reference_gc_bias(bed, ref, figures_path)
     print('generating plots for samples')
-    make_plots(summary_stats_path, figures_path, ref_bin_counts)
+    make_plots(ref, combine_bed_path, summary_stats_path, figures_path, ref_bin_counts)
 
 
 """
@@ -394,13 +491,16 @@ Running from command line parameters
 4. path of the results directory
 """
 
-
 if __name__ == "__main__":
-    # get all the bams in the bam dir
     ref = sys.argv[1]
     bam_template = sys.argv[2]
     bed_template = sys.argv[3]
     res = sys.argv[4]
+
+    # ref = '/Users/michael/TESTBAMs/human_g1k_v37.fasta'
+    # bam_template = '/Users/michael/TESTBAMs/'
+    # bed_template = '/Users/michael/TESTBAMs/'
+    # res = '/Users/michael/BakeOff/Results/GCBias/'
 
     # make there paths are not missing / on the end
     if bam_template[-1] != '/':
