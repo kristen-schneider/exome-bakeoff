@@ -240,6 +240,10 @@ def make_plots(ref, bed, csv_dir, results_dir, ref_bin_counts):
     data['ref_bin_normed_count'] = data['count'] / data['ref_windows']
     data['tech_one'] = [re.sub('-.*-.*', '', x) for x in list(data['SAMPLE'])]
     data['tech_two'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(data['SAMPLE'])]
+    data['ref_norm'] = data['ref_windows'] / sum(data['ref_windows'])
+    data['prob'] = data['count'] * data['ref_norm']
+    data['count_norm'] = data['count'] / sum(data['count'])
+    data['joint_prob'] = data['prob'] * data['ref_norm']
 
     make_single_multi_layer_plot(bed=bed,
                                  ref=ref,
@@ -272,6 +276,38 @@ def make_plots(ref, bed, csv_dir, results_dir, ref_bin_counts):
                                  y_col='count',
                                  y_lab='Read count (thousands)',
                                  fig_name=results_dir+'raw_coverage_gc_bias_capture_technology.png',
+                                 scale=1000)
+    make_single_multi_layer_plot(bed=bed,
+                                 ref=ref,
+                                 tech_df=data,
+                                 group_col='tech_two',
+                                 y_col='prob',
+                                 y_lab='Probability',
+                                 fig_name=results_dir+'prob_gc_bias_capture_technology.png',
+                                 scale=1000)
+    make_single_multi_layer_plot(bed=bed,
+                                 ref=ref,
+                                 tech_df=data,
+                                 group_col='tech_two',
+                                 y_col='joint_prob',
+                                 y_lab='Joint Prob',
+                                 fig_name=results_dir+'joint_prob_gc_bias_capture_technology.png',
+                                 scale=1000)
+    make_single_multi_layer_plot(bed=bed,
+                                 ref=ref,
+                                 tech_df=data,
+                                 group_col='tech_one',
+                                 y_col='prob',
+                                 y_lab='Probaility',
+                                 fig_name=results_dir+'prob_gc_bias_library_prep.png',
+                                 scale=1000)
+    make_single_multi_layer_plot(bed=bed,
+                                 ref=ref,
+                                 tech_df=data,
+                                 group_col='tech_one',
+                                 y_col='joint_prob',
+                                 y_lab='Joint Prob',
+                                 fig_name=results_dir+'joint_prob_gc_bias_library_prep.png',
                                  scale=1000)
 
 
@@ -337,6 +373,86 @@ def plot_59_genes_reference_gc_bias(bed, ref, res):
     plt.savefig(res + 'gc_bias_reference_and_59_genes.png')
     plt.clf()
     return og_ref_gc_bin_counts
+
+
+
+def get_max_index(arr):
+    best = 0
+    best_index = 0
+    for i in range(len(arr)):
+        if arr[i] > best:
+            best = arr[i]
+            best_index = i
+    return best_index
+
+
+def plot_all_genes_individual(bed, ref, fig_name):
+    bed_df = pd.read_csv(bed, sep='\t',header=None)
+    gene_gc_coverages = {}
+    ref_gc_bin_counts = np.zeros(101)
+    genes_gc_bin_counts = np.zeros(101)
+
+    # read in genome one chromosome / line at a time
+    for name, seq in read_fasta(open(ref)):
+        c, b, e = get_chrom_begin_end(name)
+        # get the info from the bed that is part of the current chromosome
+        sub_df = bed_df[bed_df.iloc[:, 0] == c]
+
+        # check if the bed needs any information from this chromosome
+        if sub_df.shape[0] == 0:
+            continue
+
+        # break the reference into 100 bp section and bin them based on gc content
+        for i in range(0, len(seq), 100):
+            sub_string = seq[i: i + 100]
+            dec_gc = calc_percent_gc(sub_string)
+            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+            gc = int((dec_gc + .001) * 100)
+            ref_gc_bin_counts[gc] += 1
+
+        # get a strings of each portion of the bed and calc the gc content of that string
+        for i in range(sub_df.shape[0]):
+            gene = sub_df.iloc[i,4]
+            start = sub_df.iloc[i, 1]
+            end = sub_df.iloc[i, 2]
+            string_start = b + start
+            string_end = b + end
+            # break the string into 100 bp sections
+            for j in range(string_start, string_end, 100):
+                sub_string = seq[j: j + 100]
+                dec_gc = calc_percent_gc(sub_string)
+                # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+                gc = int((dec_gc + .001) * 100)
+                if gene not in gene_gc_coverages:
+                    gene_gc_coverages[gene] = np.zeros(101)
+                gene_gc_coverages[gene][gc] += 1
+                genes_gc_bin_counts[gc] += 1
+
+    largest_counts = np.zeros(101)
+    for key in gene_gc_coverages:
+        largest_counts[get_max_index(gene_gc_coverages[key])] += 1
+
+    # bin in 5%
+    binned_by_5s = {}
+    for key in gene_gc_coverages:
+        binned_by_5s[key] = []
+        for i in range(0,100,5):
+            binned_by_5s[key].append(sum(gene_gc_coverages[key][i:i+4]))
+
+    for key in binned_by_5s:
+        y = binned_by_5s[key] / sum(binned_by_5s[key])
+        plt.plot(list(range(0,100,5)),y)
+    plt.xlabel('% GC (5% increments)')
+    plt.ylabel('Normalized count')
+    plt.title('59 genes GC bias')
+    plt.clf()
+    for key in binned_by_5s:
+        y = binned_by_5s[key] / sum(binned_by_5s[key])
+        plt.plot(list(range(0,100,5)),binned_by_5s[key])
+    plt.xlabel('% GC (5% increments)')
+    plt.ylabel('Count')
+    plt.title('59 genes GC bias')
+    plt.savefig(fig_name)
 
 
 def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig_name, scale):
@@ -407,7 +523,7 @@ def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig
     ax2 = plotting_df.plot.line(ax=ax2)
     ax2.set_xlabel('Percent GC')
     ax2.set_ylabel('Normalized Coverage')
-    ax.set_ylabel('Read Count (thousands)')
+    ax2.legend(loc='upper right', frameon=False)
 
     # Hide the right and top spines
     ax.spines['right'].set_visible(False)
@@ -416,12 +532,12 @@ def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig
     # Only show ticks on the left and bottom spines
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
-    ax.legend(loc='upper left')
-    # ax2.legend(loc='upper right')
+    ax.set_ylabel(y_lab)
 
     # plt.legend(custom_lines, samples, frameon=False, loc='upper left')
+    ax.legend(custom_lines, samples, frameon=False, loc='upper left')
     plt.xlabel('% GC')
-    plt.ylabel(y_lab)
+    ax2.set_ylabel('Normalized Coverage')
     plt.savefig(fig_name)
     plt.clf()
 
