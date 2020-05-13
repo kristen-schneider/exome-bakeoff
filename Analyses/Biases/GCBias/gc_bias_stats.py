@@ -209,6 +209,20 @@ def make_line_plot(df, ref_col,region_col, bam_indexes,sample_names, y_lab, fig_
     plt.savefig(fig_name)
     plt.clf()
 
+# make a heat map plotting function
+def plot_heat_map(df,col_indexes,figname):
+    columns = [list(df.columns)[x] for x in col_indexes]
+    plot_data = df[df.columns.intersection(columns)]
+    fig, ax = plt.subplots()
+    fig.set_size_inches(35.0, 25.0)
+    ax.set_xticks(np.arange(len(columns)))
+    ax.set_xticklabels(columns)
+    ax.set_ylabel('% GC')
+    plt.imshow(plot_data)
+    plt.colorbar(cmap='cold')
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    plt.savefig(figname)
+
 
 def run_analyses(ref, bams, beds, results_dir):
     # make location to store intermediate files
@@ -256,6 +270,9 @@ def run_analyses(ref, bams, beds, results_dir):
     joint_prob_bam_indexes = [x + len(bam_indexes) + num_previously_added_cols for x in bam_indexes]
     num_previously_added_cols += len(bam_indexes)
 
+    # plot heat map
+    plot_heat_map(df,norm_bam_indexes,results_dir + 'norm_heat_map.png')
+    plot_heat_map(df, list(range(3,61)), results_dir + '59_genes_heat_map.png')
     # make the line plots
     make_line_plot(df, 'ref_norm', 'region_norm', bam_indexes, tech_one, 'Count',
                    results_dir + 'raw_count_library_prep.png')
@@ -271,14 +288,21 @@ def run_analyses(ref, bams, beds, results_dir):
                    results_dir + 'joint_prob_library_prep.png')
     make_line_plot(df, 'ref_norm', 'region_norm', joint_prob_bam_indexes, tech_two, 'Joint probability',
                    results_dir + 'joint_prob_capture_tech.png')
+    return df, norm_bam_indexes
 
-# make a heat map plotting function
+
+
 
 if __name__ == "__main__":
     ref = sys.argv[1]
     bam_template = sys.argv[2]
     bed_template = sys.argv[3]
     res = sys.argv[4]
+
+    # ref = '/Users/michael/TESTBAMs/human_g1k_v37.fasta'
+    # bam_template = '/Users/michael/TESTBAMs/'
+    # bed_template = '/Users/michael/TESTBAMs/'
+    # res = '/Users/michael/BakeOff/Results/GCBias/'
 
     # make there paths are not missing / on the end
     if bam_template[-1] != '/':
@@ -299,4 +323,8 @@ if __name__ == "__main__":
             beds.append(bed_template + file)
 
     # run the analysis
-    run_analyses(ref, bams, beds, res)
+    df, norm_indexes = run_analyses(ref, bams, beds, res)
+
+
+
+
