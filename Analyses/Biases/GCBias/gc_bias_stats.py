@@ -9,6 +9,7 @@ from matplotlib.lines import Line2D
 import re
 import numpy as np
 import sys
+import matplotlib.patches as mpatches
 
 sns.set_style("whitegrid", {'axes.grid': False})
 
@@ -65,66 +66,69 @@ def get_chrom_begin_end(name):
     return chrom, begin, fin
 
 
-"""
-Given the path to the reference sequence
-Break the reference into 100bp windows
-Calc the GC % of each window
-Return a pandas DataFrame each rowing representing a 100bp window and columns formatted as:
-Chromosome  Start   End     GC%
-"""
-
-
-def load_hg37_gc_df(ref):
-    # strip the path
+def get_ref_region_df(ref, bed):
     filename = re.sub('.*/', '', ref)
     # strip the file extension
     extension_less_name = re.sub('\\.\\w*', '', filename)
     cache_name = 'cache_' + extension_less_name + '.pickle'
-    if not path.exists(cache_name):
-        print('Generating Reference % GC info')
-        chromosomes = []
-        start = []
-        end = []
-        gc_percent = []
-        with open(ref) as fp:
-            for name, seq in read_fasta(fp):
-                print(name)
-                c, b, e = get_chrom_begin_end(name)
-                print(str(c) + ' ' + str(b) + ' ' + str(e))
-                gc_percent = gc_percent + [calc_percent_gc(seq[i:i + 100]) for i in range(0, len(seq), 100)]
-                new_start = np.array(list(range(0, len(seq), 100)))
-                new_start = new_start + b
-                new_end = new_start + 100
-                new_chrom = [c] * len(new_start)
-                new_start.tolist()
-                new_end.tolist()
-                start = start + new_start.tolist()
-                end = end + new_end.tolist()
-                chromosomes = chromosomes + new_chrom
-        hg37gc_df = pd.DataFrame({'Chromosome': chromosomes, 'Start': start, 'End': end, 'GC%': gc_percent})
-        pickle.dump(hg37gc_df, open(cache_name, 'wb'))
-        return hg37gc_df
-    else:
-        print('Loading Reference Cache % GC info')
+    if path.exists(cache_name):
+        print('Loading Reference and Bed Cache % GC info')
         return pickle.load(open(cache_name, 'rb'))
+    print('Generating Reference and Bed Cache % GC info')
+    bed_df = pd.read_csv(bed, sep='\t')
+    bed_gc_bin_counts = np.zeros(101)
+    ref_gc_bin_counts = np.zeros(101)
+    individual_gene_counts_dict = {}
+    # read in genome one chromosome / line at a time
+    for name, seq in read_fasta(open(ref)):
+        c, b, e = get_chrom_begin_end(name)
+        # get the info from the bed that is part of the current chromosome
+        sub_df = bed_df[bed_df.iloc[:, 0] == c]
+
+        # break the reference into 100 bp section and bin them based on gc content
+        for i in range(0, len(seq), 100):
+            sub_string = seq[i: i + 100]
+            dec_gc = calc_percent_gc(sub_string)
+            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+            gc = int((dec_gc + .001) * 100)
+            ref_gc_bin_counts[gc] += 1
+
+        # check if the bed needs any information from this chromosome
+        if sub_df.shape[0] == 0:
+            continue
+
+        # get a strings of each portion of the bed and calc the gc content of that string
+        for i in range(sub_df.shape[0]):
+            start = sub_df.iloc[i, 1]
+            end = sub_df.iloc[i, 2]
+            gene = sub_df.iloc[i, -1]
+            if gene not in individual_gene_counts_dict:
+                individual_gene_counts_dict[gene] = np.zeros((101))
+            string_start = b + start
+            string_end = b + end
+            # break the string into 100 bp sections
+            for j in range(string_start, string_end, 100):
+                sub_string = seq[j: j + 100]
+                dec_gc = calc_percent_gc(sub_string)
+                # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+                gc = int((dec_gc + .001) * 100)
+                bed_gc_bin_counts[gc] += 1
+                individual_gene_counts_dict[gene][gc] += 1
+
+    df = pd.DataFrame(
+        {'percent': list(range(0, 101)), 'ref_count': ref_gc_bin_counts, '59 genes count': bed_gc_bin_counts})
+    for gene in individual_gene_counts_dict:
+        df[gene] = individual_gene_counts_dict[gene]
+    pickle.dump(df, open(cache_name, 'wb'))
+    return df
 
 
-"""
-Given
-bam - path to a bam file
-bed - path to a bed file
-res - path of the results directory
-Calculate the % GC of reads in the bam file that occur within the regions specified in the bed file
-return a pandas DataFrame with columns ('percent','count')
-"""
-
-
-def calc_gc(bam, bed, res):
+# get the count for the BAMs
+def calc_gc(bam, bed):
     percent_count = list(np.zeros((101)))
     # with that bed file, calc the % GC for all reads in the bam
     bam_obj = pysam.AlignmentFile(bam, "rb", require_index=False)
     for line in open(bed, 'r'):
-        # print(line)
         bed_line = line.split('\t')
         bed_contig = bed_line[0]
         bed_start = int(bed_line[1])
@@ -134,393 +138,55 @@ def calc_gc(bam, bed, res):
             # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
             index = int((gc_content + .001) * 100)
             percent_count[index] += 1
-
-    head, tail = os.path.split(bam)
-    df = pd.DataFrame({'percent': list(range(0, len(percent_count))), 'count': percent_count, })
-
-    if res[-1] != '/':
-        res += '/'
-    tail = tail.replace('.bam', '')
-    df.to_csv(res + tail + '.csv')
-    return df
+    return percent_count
 
 
-"""
-Given
-df - pandas DataFrame with columns ('percent','SAMPLE','tech_one','tech_two','ref_bin_normed_count') - not ordered
-group_col -  the column to be used for grouping the data (tech_one or tech_two)
-y_col - column to be used in the y axis
-y_lab - label to be used on the y axis
-fig_name - name of the figure to be produced
-Creates a line plot based on the give parameters and saves it
-"""
+def get_bams_gc_df(bams, bed):
+    sample_percents = {}
+    for file in bams:
+        if file[-4:] == '.bam':
+            head, tail = os.path.split(file)
+            tail = tail.replace('.bam', '')
+            percents = calc_gc(file, bed)
+            sample_percents[tail] = percents
+    return pd.DataFrame(sample_percents)
 
 
-def plot_by_tech(df, group_col, y_col, y_lab, fig_name, scale=1):
-    # rgba based color schemes to make colors semi transparent
-    # pale = [(.07,.46,.2,.5), (.2,.14,.53,.5),(.86,.8,.46,.5),(.8,.4,.46,.5),(.53,.01,.33,.5),(.54,.8,.93,.5)]
-    # opacity = .8
-    # colors = [(230/255,159/255,3/255,opacity),(86/255,180/255,233/255,opacity),(5/255,158/255,115/255,opacity),(3/255,114/255,178/255,opacity),(213/255,94/255,0,opacity),(204/255,121/255,167/255,opacity)]
+def get_gc_bias_df(ref, bed, bams):
+    bam_df = get_bams_gc_df(bams, bed)
+    ref_reg_df = get_ref_region_df(ref, bed)
+    merged_df = pd.concat([ref_reg_df, bam_df], axis=1).fillna(0)
+    return merged_df, ref_reg_df.shape[1], bam_df.shape[1]
+
+
+def make_line_plot(df, ref_col,region_col, bam_indexes,sample_names, y_lab, fig_name):
+    print(bam_indexes)
+    df = df[df['percent'] > 0]
     colors = ['r', 'g', 'b', 'orange', 'purple', 'y']
     widths = [6, 5, 4, 3, 2, 1]
-    samples = list(set(df[group_col]))
+    print(df.shape)
+    samples = [list(df.columns)[x] for x in bam_indexes]
+    print(samples)
     # create dictionaries of the group and the color / width of their lines
-    color_map = {samples[i]: colors[i] for i in range(len(samples))}
-    width_map = {samples[i]: widths[i] for i in range(len(samples))}
+    color_map = {sample_names[i]: colors[i] for i in range(len(sample_names))}
+    width_map = {sample_names[i]: widths[i] for i in range(len(sample_names))}
     custom_lines = []
 
     ax = plt.subplot(111)
-    for sample in samples:
-        custom_lines.append(Line2D([0], [0], color=color_map[sample], lw=4))
-        sub = df[df[group_col] == sample]
-        for s in list(set(sub['SAMPLE'])):
-            subsub = sub[sub['SAMPLE'] == s]
-            subsub[y_col] = [x / scale for x in subsub[y_col]]
-            ax.plot(subsub['percent'], subsub[y_col], color=color_map[sample],
-                    linewidth=width_map[sample])
+    for i in range(len(samples)):
+        sample = samples[i]
+        samp_name = sample_names[i]
+        # custom_lines.append(Line2D([0], [0], color=color_map[sample], lw=4, label=sample + 'banene'))
+        print(sample)
+        print(df[sample])
+        ax.plot(df['percent'], df[sample], color=color_map[samp_name], linewidth=width_map[samp_name])
 
-    # Hide the right and top spines
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-
-    # Only show ticks on the left and bottom spines
-    ax.yaxis.set_ticks_position('left')
-    ax.xaxis.set_ticks_position('bottom')
-
-    plt.legend(custom_lines, samples, frameon=False, loc='upper left')
-    plt.xlabel('% GC')
-    plt.ylabel(y_lab)
-
-    plt.savefig(fig_name, dpi=300)
-    plt.clf()
-
-
-"""
-Given:
-csv_dir - path to where the output csv from gc_bias_stats.py are stored
-results_dir - path to directory the figures should be saved
-"""
-
-
-def make_plots(ref, bed, csv_dir, results_dir, ref_bin_counts):
-    # add a back slash to the of the dirs in case there is no one already
-    if results_dir[-1] != '/':
-        results_dir += '/'
-    if csv_dir[-1] != '/':
-        csv_dir += '/'
-
-    # make the results directory if it does not exist already
-    try:
-        makedirs(results_dir)
-    except FileExistsError:
-        pass
-
-    data = None
-    first = True
-    first_df = None
-
-    # read in all the gc bias stats .csv files and combine into one DataFrame
-    first = True
-    for f in os.listdir(csv_dir):
-        if f[-3:] != 'csv':
-            continue
-        df = pd.read_csv(csv_dir + f)
-        df['SAMPLE'] = f.replace('.csv', '')
-        if first:
-            data = df
-            first = False
-            first_df = df
-        else:
-            data = data.append(df)
-
-    # create a column with the number of reads found in the reference genome at that region
-    data['ref_windows'] = [ref_bin_counts[x] for x in list(data['percent'])]
-
-    # create alternate columns to plot with
-    data['ref_bin_normed_count'] = data['count'] / data['ref_windows']
-    data['tech_one'] = [re.sub('-.*-.*', '', x) for x in list(data['SAMPLE'])]
-    data['tech_two'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(data['SAMPLE'])]
-    data['ref_norm'] = data['ref_windows'] / sum(data['ref_windows'])
-    data['prob'] = data['count'] * data['ref_norm']
-    data['count_norm'] = data['count'] / sum(data['count'])
-    data['joint_prob'] = data['prob'] * data['ref_norm']
-
-    make_single_multi_layer_plot(bed=bed,
-                                 ref=ref,
-                                 tech_df=data,
-                                 group_col='tech_one',
-                                 y_col='ref_bin_normed_count',
-                                 y_lab='Normalized Read Count',
-                                 fig_name=results_dir+'gc_bias_library_prep.png',
-                                 scale=1)
-    make_single_multi_layer_plot(bed=bed,
-                                 ref=ref,
-                                 tech_df=data,
-                                 group_col='tech_two',
-                                 y_col='ref_bin_normed_count',
-                                 y_lab='Normalized Read Count',
-                                 fig_name=results_dir+'gc_bias_capture_technology.png',
-                                 scale=1)
-    make_single_multi_layer_plot(bed=bed,
-                                 ref=ref,
-                                 tech_df=data,
-                                 group_col='tech_one',
-                                 y_col='count',
-                                 y_lab='Read count (thousands)',
-                                 fig_name=results_dir+'raw_coverage_gc_bias_library_prep.png',
-                                 scale=1000)
-    make_single_multi_layer_plot(bed=bed,
-                                 ref=ref,
-                                 tech_df=data,
-                                 group_col='tech_two',
-                                 y_col='count',
-                                 y_lab='Read count (thousands)',
-                                 fig_name=results_dir+'raw_coverage_gc_bias_capture_technology.png',
-                                 scale=1000)
-    make_single_multi_layer_plot(bed=bed,
-                                 ref=ref,
-                                 tech_df=data,
-                                 group_col='tech_two',
-                                 y_col='prob',
-                                 y_lab='Probability',
-                                 fig_name=results_dir+'prob_gc_bias_capture_technology.png',
-                                 scale=1000)
-    make_single_multi_layer_plot(bed=bed,
-                                 ref=ref,
-                                 tech_df=data,
-                                 group_col='tech_two',
-                                 y_col='joint_prob',
-                                 y_lab='Joint Prob',
-                                 fig_name=results_dir+'joint_prob_gc_bias_capture_technology.png',
-                                 scale=1000)
-    make_single_multi_layer_plot(bed=bed,
-                                 ref=ref,
-                                 tech_df=data,
-                                 group_col='tech_one',
-                                 y_col='prob',
-                                 y_lab='Probaility',
-                                 fig_name=results_dir+'prob_gc_bias_library_prep.png',
-                                 scale=1000)
-    make_single_multi_layer_plot(bed=bed,
-                                 ref=ref,
-                                 tech_df=data,
-                                 group_col='tech_one',
-                                 y_col='joint_prob',
-                                 y_lab='Joint Prob',
-                                 fig_name=results_dir+'joint_prob_gc_bias_library_prep.png',
-                                 scale=1000)
-
-
-"""
-Give the path to a .bed file and reference genome (.fasta)
-Plot the coverage based on % GC of the whole reference genome and sections of the genome specified in the .bed
-Returns a numpy array of length 101 (percents 0-100) representing the % GC coverage of the reference genome 
-"""
-
-
-def plot_59_genes_reference_gc_bias(bed, ref, res):
-    bed_df = pd.read_csv(bed, sep='\t')
-    bed_gc_bin_counts = np.zeros(101)
-    ref_gc_bin_counts = np.zeros(101)
-    # read in genome one chromosome / line at a time
-    for name, seq in read_fasta(open(ref)):
-        c, b, e = get_chrom_begin_end(name)
-        # get the info from the bed that is part of the current chromosome
-        sub_df = bed_df[bed_df.iloc[:, 0] == c]
-
-        # check if the bed needs any information from this chromosome
-        if sub_df.shape[0] == 0:
-            continue
-
-        # break the reference into 100 bp section and bin them based on gc content
-        for i in range(0, len(seq), 100):
-            sub_string = seq[i: i + 100]
-            dec_gc = calc_percent_gc(sub_string)
-            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
-            gc = int((dec_gc + .001) * 100)
-            ref_gc_bin_counts[gc] += 1
-
-        # get a strings of each portion of the bed and calc the gc content of that string
-        for i in range(sub_df.shape[0]):
-            start = sub_df.iloc[i, 1]
-            end = sub_df.iloc[i, 2]
-            string_start = b + start
-            string_end = b + end
-            # break the string into 100 bp sections
-            for j in range(string_start, string_end, 100):
-                sub_string = seq[j: j + 100]
-                dec_gc = calc_percent_gc(sub_string)
-                # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
-                gc = int((dec_gc + .001) * 100)
-                bed_gc_bin_counts[gc] += 1
-    og_ref_gc_bin_counts = ref_gc_bin_counts.copy()
-    ref_gc_bin_counts = [x / 1000 for x in ref_gc_bin_counts]
-
-    df = pd.DataFrame(
-        {'Percent': list(range(0, 101)), 'reference count': ref_gc_bin_counts, '59 genes count': bed_gc_bin_counts})
-    df = df[df['Percent'] > 0]
-    ax = df.plot(x="Percent", y="reference count", legend=False)
-    ax2 = ax.twinx()
-    df.plot(x="Percent", y="59 genes count", ax=ax2, legend=False, color="r")
-    ax.figure.legend()
-    ax.grid(False)
-    ax2.grid(False)
-    ax.set_ylabel('Reference genome count (thousands)')
-    ax2.set_ylabel('59 Genes count')
-    ax.set_xlabel('% GC')
-    if res[-1] != '/':
-        res += '/'
-    plt.savefig(res + 'gc_bias_reference_and_59_genes.png')
-    plt.clf()
-    return og_ref_gc_bin_counts
-
-
-
-def get_max_index(arr):
-    best = 0
-    best_index = 0
-    for i in range(len(arr)):
-        if arr[i] > best:
-            best = arr[i]
-            best_index = i
-    return best_index
-
-
-def plot_all_genes_individual(bed, ref, fig_name):
-    bed_df = pd.read_csv(bed, sep='\t',header=None)
-    gene_gc_coverages = {}
-    ref_gc_bin_counts = np.zeros(101)
-    genes_gc_bin_counts = np.zeros(101)
-
-    # read in genome one chromosome / line at a time
-    for name, seq in read_fasta(open(ref)):
-        c, b, e = get_chrom_begin_end(name)
-        # get the info from the bed that is part of the current chromosome
-        sub_df = bed_df[bed_df.iloc[:, 0] == c]
-
-        # check if the bed needs any information from this chromosome
-        if sub_df.shape[0] == 0:
-            continue
-
-        # break the reference into 100 bp section and bin them based on gc content
-        for i in range(0, len(seq), 100):
-            sub_string = seq[i: i + 100]
-            dec_gc = calc_percent_gc(sub_string)
-            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
-            gc = int((dec_gc + .001) * 100)
-            ref_gc_bin_counts[gc] += 1
-
-        # get a strings of each portion of the bed and calc the gc content of that string
-        for i in range(sub_df.shape[0]):
-            gene = sub_df.iloc[i,4]
-            start = sub_df.iloc[i, 1]
-            end = sub_df.iloc[i, 2]
-            string_start = b + start
-            string_end = b + end
-            # break the string into 100 bp sections
-            for j in range(string_start, string_end, 100):
-                sub_string = seq[j: j + 100]
-                dec_gc = calc_percent_gc(sub_string)
-                # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
-                gc = int((dec_gc + .001) * 100)
-                if gene not in gene_gc_coverages:
-                    gene_gc_coverages[gene] = np.zeros(101)
-                gene_gc_coverages[gene][gc] += 1
-                genes_gc_bin_counts[gc] += 1
-
-    largest_counts = np.zeros(101)
-    for key in gene_gc_coverages:
-        largest_counts[get_max_index(gene_gc_coverages[key])] += 1
-
-    # bin in 5%
-    binned_by_5s = {}
-    for key in gene_gc_coverages:
-        binned_by_5s[key] = []
-        for i in range(0,100,5):
-            binned_by_5s[key].append(sum(gene_gc_coverages[key][i:i+4]))
-
-    for key in binned_by_5s:
-        y = binned_by_5s[key] / sum(binned_by_5s[key])
-        plt.plot(list(range(0,100,5)),y)
-    plt.xlabel('% GC (5% increments)')
-    plt.ylabel('Normalized count')
-    plt.title('59 genes GC bias')
-    plt.clf()
-    for key in binned_by_5s:
-        y = binned_by_5s[key] / sum(binned_by_5s[key])
-        plt.plot(list(range(0,100,5)),binned_by_5s[key])
-    plt.xlabel('% GC (5% increments)')
-    plt.ylabel('Count')
-    plt.title('59 genes GC bias')
-    plt.savefig(fig_name)
-
-
-def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig_name, scale):
-    bed_df = pd.read_csv(bed, sep='\t')
-    bed_gc_bin_counts = np.zeros(101)
-    ref_gc_bin_counts = np.zeros(101)
-    # read in genome one chromosome / line at a time
-    for name, seq in read_fasta(open(ref)):
-        c, b, e = get_chrom_begin_end(name)
-        # get the info from the bed that is part of the current chromosome
-        sub_df = bed_df[bed_df.iloc[:, 0] == c]
-
-        # check if the bed needs any information from this chromosome
-        if sub_df.shape[0] == 0:
-            continue
-
-        # break the reference into 100 bp section and bin them based on gc content
-        for i in range(0, len(seq), 100):
-            sub_string = seq[i: i + 100]
-            dec_gc = calc_percent_gc(sub_string)
-            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
-            gc = int((dec_gc + .001) * 100)
-            ref_gc_bin_counts[gc] += 1
-
-        # get a strings of each portion of the bed and calc the gc content of that string
-        for i in range(sub_df.shape[0]):
-            start = sub_df.iloc[i, 1]
-            end = sub_df.iloc[i, 2]
-            string_start = b + start
-            string_end = b + end
-            # break the string into 100 bp sections
-            for j in range(string_start, string_end, 100):
-                sub_string = seq[j: j + 100]
-                dec_gc = calc_percent_gc(sub_string)
-                # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
-                gc = int((dec_gc + .001) * 100)
-                bed_gc_bin_counts[gc] += 1
-    og_ref_gc_bin_counts = ref_gc_bin_counts.copy()
-    ref_gc_bin_counts = [x / 1000 for x in ref_gc_bin_counts]
-
-    df = pd.DataFrame(
-        {'Percent': list(range(0, 101)), 'reference count': ref_gc_bin_counts, '59 genes count': bed_gc_bin_counts})
-    df = df[df['Percent'] > 0]
-
-    df['norm_ref'] = df['reference count'] / sum(df['reference count'])
-    df['norm_59'] = df['59 genes count'] / sum(df['59 genes count'])
-    plotting_df = pd.DataFrame({'Reference Genome': list(df['norm_ref']), '59 Genes': list(df['norm_59'])})
-
-    colors = ['r', 'g', 'b', 'orange', 'purple', 'y']
-    widths = [6, 5, 4, 3, 2, 1]
-    samples = list(set(tech_df[group_col]))
-    # create dictionaries of the group and the color / width of their lines
-    color_map = {samples[i]: colors[i] for i in range(len(samples))}
-    width_map = {samples[i]: widths[i] for i in range(len(samples))}
-    custom_lines = []
-
-    ax = plt.subplot(111)
-    for sample in samples:
-        custom_lines.append(Line2D([0], [0], color=color_map[sample], lw=4))
-        sub = tech_df[tech_df[group_col] == sample]
-        for s in list(set(sub['SAMPLE'])):
-            subsub = sub[sub['SAMPLE'] == s]
-            subsub[y_col] = [x / scale for x in subsub[y_col]]
-            ax.plot(subsub['percent'], subsub[y_col], color=color_map[sample],
-                     linewidth=width_map[sample])
+    for samp_name in list(set(sample_names)):
+        custom_lines.append(mpatches.Patch(color=color_map[samp_name]))
 
     ax2 = ax.twinx()
-    ax2 = plotting_df.plot.line(ax=ax2)
+    plotting_df = pd.DataFrame({'ref_col':list(df[ref_col]),'reg_col':list(df[region_col])})
+    plotting_df.plot.line(ax=ax2)
     ax2.set_xlabel('Percent GC')
     ax2.set_ylabel('Normalized Coverage')
     ax2.legend(loc='upper right', frameon=False)
@@ -535,25 +201,14 @@ def make_single_multi_layer_plot(bed, ref, tech_df, group_col, y_col, y_lab, fig
     ax.set_ylabel(y_lab)
 
     # plt.legend(custom_lines, samples, frameon=False, loc='upper left')
-    ax.legend(custom_lines, samples, frameon=False, loc='upper left')
+    ax.legend(custom_lines, sample_names, frameon=False, loc='upper left')
     plt.xlabel('% GC')
     ax2.set_ylabel('Normalized Coverage')
     plt.savefig(fig_name)
     plt.clf()
 
 
-"""
-Given
-ref - path to reference genome
-bams - list of paths to bam files
-beds - list of paths to bed files
-results_dir - location results should be stored
-Generates summary statistics for each of the bam files
-Produced plots summarizing GC bias in the bams, reference genome and regions of interest
-"""
-
-
-def run_gc_bias_analysis(ref, bams, beds, results_dir):
+def run_analyses(ref, bams, beds, results_dir):
     # make location to store intermediate files
     if results_dir[-1] != '/':
         results_dir += '/'
@@ -572,53 +227,55 @@ def run_gc_bias_analysis(ref, bams, beds, results_dir):
             combind_bed.write(line)
     combind_bed.close()
 
-    # create intermediate location for gc bias summary stats
-    print('creating intermediate location')
-    summary_stats_path = intermediate_files_path + 'Summary-Stats-CSVs/'
-    try:
-        makedirs(summary_stats_path)
-    except FileExistsError:
-        pass
+    # build the df of all data
+    df, ref_shape, bam_shape = get_gc_bias_df(ref, combine_bed_path, bams)
+    df['ref_norm'] = df['ref_count'] / sum(df['ref_count'])
+    df['region_norm'] = df['59 genes count'] / sum(df['59 genes count'])
+    num_previously_added_cols = 2
 
-    # generate gc bias stats for each bam
-    print('doing GC stats for bams')
-    for bam in bams:
-        print('\t' + bam)
-        calc_gc(bam, bed, summary_stats_path)
+    # split the sample named into their library prep and capture tech
+    bam_indexes = list(range(ref_shape, ref_shape + bam_shape))
+    sample_names = [list(df.columns)[x] for x in bam_indexes]
+    tech_one = [re.sub('-.*-.*', '', x) for x in sample_names]
+    tech_two = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in sample_names]
 
-    # make directory for plots
-    print('making dir for figures')
-    figures_path = results_dir + 'Figures/'
-    try:
-        makedirs(figures_path)
-    except FileExistsError:
-        pass
+    # normalize each of the samples
+    norm_names = [ [list(df.columns)[x],'norm_'+list(df.columns)[x]] for x in bam_indexes]
+    for names in norm_names:
+        df[names[1]] = df[names[0]] / sum(df[names[0]])
+    norm_bam_indexes = [x + len(bam_indexes) + num_previously_added_cols for x in bam_indexes]
+    num_previously_added_cols += len(bam_indexes)
 
-    # generate plots
-    print('generating reference and region plot')
-    ref_bin_counts = plot_59_genes_reference_gc_bias(bed, ref, figures_path)
-    print('generating plots for samples')
-    make_plots(ref, combine_bed_path, summary_stats_path, figures_path, ref_bin_counts)
+    # make joint probability of each column
+    joint_names = [['norm_' + list(df.columns)[x], 'joint_' + list(df.columns)[x]] for x in bam_indexes]
+    for names in joint_names:
+        df[names[1]] = df[names[0]] * df['region_norm']
+    joint_prob_bam_indexes = [x + len(bam_indexes) + num_previously_added_cols for x in bam_indexes]
+    num_previously_added_cols += len(bam_indexes)
 
+    # make the line plots
+    make_line_plot(df, 'ref_norm', 'region_norm', bam_indexes, tech_one, 'Count',
+                   results_dir + 'raw_count_library_prep.png')
+    make_line_plot(df, 'ref_norm', 'region_norm', bam_indexes, tech_two, 'Count',
+                   results_dir + 'raw_count_capture_tech.png')
+    # normalized count
+    make_line_plot(df, 'ref_norm', 'region_norm', norm_bam_indexes, tech_one, 'Normalized count',
+                   results_dir + 'norm_count_library_prep.png')
+    make_line_plot(df, 'ref_norm', 'region_norm', norm_bam_indexes, tech_two, 'Normalized count',
+                   results_dir + 'norm_count_capture_tech.png')
+    # joint probaility
+    make_line_plot(df, 'ref_norm', 'region_norm', joint_prob_bam_indexes, tech_one, 'Joint probability',
+                   results_dir + 'joint_prob_library_prep.png')
+    make_line_plot(df, 'ref_norm', 'region_norm', joint_prob_bam_indexes, tech_two, 'Joint probability',
+                   results_dir + 'joint_prob_capture_tech.png')
 
-"""
-Running from command line parameters
-1. reference genome
-2. path directory containing all bam files
-3. path directory containing all bed
-4. path of the results directory
-"""
+# make a heat map plotting function
 
 if __name__ == "__main__":
     ref = sys.argv[1]
     bam_template = sys.argv[2]
     bed_template = sys.argv[3]
     res = sys.argv[4]
-
-    # ref = '/Users/michael/TESTBAMs/human_g1k_v37.fasta'
-    # bam_template = '/Users/michael/TESTBAMs/'
-    # bed_template = '/Users/michael/TESTBAMs/'
-    # res = '/Users/michael/BakeOff/Results/GCBias/'
 
     # make there paths are not missing / on the end
     if bam_template[-1] != '/':
@@ -639,4 +296,4 @@ if __name__ == "__main__":
             beds.append(bed_template + file)
 
     # run the analysis
-    run_gc_bias_analysis(ref, bams, beds, res)
+    run_analyses(ref, bams, beds, res)
