@@ -162,8 +162,8 @@ def get_gc_bias_df(ref, bed, bams):
 def make_line_plot(df, ref_col,region_col, bam_indexes,sample_names, y_lab, fig_name):
     print(bam_indexes)
     df = df[df['percent'] > 0]
-    colors = ['r', 'g', 'b', 'orange', 'purple', 'y']
-    widths = [6, 5, 4, 3, 2, 1]
+    colors = ['b','g','r','c','m','y','k','orange', 'purple']
+    widths = list(range(len(list(set(sample_names))),0,-1))
     print(df.shape)
     samples = [list(df.columns)[x] for x in bam_indexes]
     print(samples)
@@ -229,6 +229,7 @@ def run_analyses(ref, bams, beds, results_dir):
 
     # build the df of all data
     df, ref_shape, bam_shape = get_gc_bias_df(ref, combine_bed_path, bams)
+    print(df)
     df['ref_norm'] = df['ref_count'] / sum(df['ref_count'])
     df['region_norm'] = df['59 genes count'] / sum(df['59 genes count'])
     num_previously_added_cols = 2
