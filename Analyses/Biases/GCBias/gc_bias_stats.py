@@ -162,14 +162,16 @@ def get_gc_bias_df(ref, bed, bams):
 def make_line_plot(df, ref_col,region_col, bam_indexes,sample_names, y_lab, fig_name):
     print(bam_indexes)
     df = df[df['percent'] > 0]
+    samp_name_set = list(set(sample_names))
     colors = ['b','g','r','c','m','y','k','orange', 'purple']
-    widths = list(range(len(list(set(sample_names))),0,-1))
+    widths = list(range(len(samp_name_set),0,-1))
+    print(widths)
     print(df.shape)
     samples = [list(df.columns)[x] for x in bam_indexes]
     print(samples)
     # create dictionaries of the group and the color / width of their lines
-    color_map = {sample_names[i]: colors[i] for i in range(len(sample_names))}
-    width_map = {sample_names[i]: widths[i] for i in range(len(sample_names))}
+    color_map = {samp_name_set[i]: colors[i] for i in range(len(samp_name_set))}
+    width_map = {samp_name_set[i]: widths[i] for i in range(len(samp_name_set))}
     custom_lines = []
 
     ax = plt.subplot(111)
