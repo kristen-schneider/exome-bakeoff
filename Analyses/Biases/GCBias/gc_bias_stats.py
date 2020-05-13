@@ -222,6 +222,7 @@ def plot_heat_map(df,col_indexes,figname):
     plt.colorbar(cmap='cold')
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     plt.savefig(figname)
+    plt.clf()
 
 
 def run_analyses(ref, bams, beds, results_dir):
