@@ -174,7 +174,8 @@ def make_line_plot(df, ref_col,region_col, bam_indexes,sample_names, y_lab, fig_
     width_map = {samp_name_set[i]: widths[i] for i in range(len(samp_name_set))}
     custom_lines = []
 
-    ax = plt.subplot(111)
+    fig, ax = plt.subplots()
+    fig.set_size_inches(17.5, 12.5)
     for i in range(len(samples)):
         sample = samples[i]
         samp_name = sample_names[i]
@@ -214,7 +215,7 @@ def plot_heat_map(df,col_indexes,figname):
     columns = [list(df.columns)[x] for x in col_indexes]
     plot_data = df[df.columns.intersection(columns)]
     fig, ax = plt.subplots()
-    fig.set_size_inches(35.0, 25.0)
+    fig.set_size_inches(35, 25)
     ax.set_xticks(np.arange(len(columns)))
     ax.set_xticklabels(columns)
     ax.set_ylabel('% GC')
