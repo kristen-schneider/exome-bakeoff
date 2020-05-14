@@ -160,15 +160,13 @@ def get_gc_bias_df(ref, bed, bams):
 
 
 def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fig_name, use_ref_and_reg=True):
-    print(bam_indexes)
+    print('Sample Names')
+    print(sample_names)
     df = df[df['percent'] > 0]
     samp_name_set = list(set(sample_names))
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'purple']
     widths = list(range(len(samp_name_set), 0, -1))
-    print(widths)
-    print(df.shape)
     samples = [list(df.columns)[x] for x in bam_indexes]
-    print(samples)
     # create dictionaries of the group and the color / width of their lines
     color_map = {samp_name_set[i]: colors[i] for i in range(len(samp_name_set))}
     width_map = {samp_name_set[i]: widths[i] for i in range(len(samp_name_set))}
@@ -176,16 +174,15 @@ def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fi
 
     fig, ax = plt.subplots()
     fig.set_size_inches(17.5, 12.5)
+    samp_names_ordered = []
     for i in range(len(samples)):
         sample = samples[i]
         samp_name = sample_names[i]
-        # custom_lines.append(Line2D([0], [0], color=color_map[sample], lw=4, label=sample + 'banene'))
-        print(sample)
-        print(df[sample])
+        if samp_name not in samp_names_ordered:
+            samp_names_ordered.append(samp_name)
+            custom_lines.append(mpatches.Patch(color=color_map[samp_name]))
         ax.plot(df['percent'], df[sample], color=color_map[samp_name], linewidth=width_map[samp_name])
 
-    for samp_name in list(set(sample_names)):
-        custom_lines.append(mpatches.Patch(color=color_map[samp_name]))
     if use_ref_and_reg:
         ax2 = ax.twinx()
         plotting_df = pd.DataFrame({'ref_col': list(df[ref_col]), 'reg_col': list(df[region_col])})
@@ -204,7 +201,7 @@ def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fi
     ax.set_ylabel(y_lab)
 
     # plt.legend(custom_lines, samples, frameon=False, loc='upper left')
-    ax.legend(custom_lines, sample_names, frameon=False, loc='upper left')
+    ax.legend(custom_lines, samp_names_ordered, frameon=False, loc='upper left')
     plt.xlabel('% GC')
     plt.savefig(fig_name)
     plt.clf()
@@ -276,7 +273,6 @@ def run_analyses(ref, bams, beds, results_dir):
 
     # build the df of all data
     df, ref_shape, bam_shape = get_gc_bias_df(ref, combine_bed_path, bams)
-    print(df)
     df['ref_norm'] = df['ref_count'] / sum(df['ref_count'])
     df['region_norm'] = df['59 genes count'] / sum(df['59 genes count'])
     num_previously_added_cols = 2
