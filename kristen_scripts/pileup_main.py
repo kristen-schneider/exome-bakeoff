@@ -1,10 +1,3 @@
-# This script will call "padre" (to run on each pileup file)
-# INPUT:(1) directory of pileup files
-#       (2) request for which metric we need
-# --> for each pileup:
-#   --> call "padre" script
-#   --> "padre" script will call the metric script and write some metric files
-
 import argparse
 import os
 import pysam
