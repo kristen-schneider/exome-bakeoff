@@ -50,4 +50,3 @@ def read_regions(tbx_pileup_file, regions_file, metrics_options, sample_name):
             # ... and so on
 
 
-
