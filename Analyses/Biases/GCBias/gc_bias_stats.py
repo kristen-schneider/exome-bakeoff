@@ -159,7 +159,7 @@ def get_gc_bias_df(ref, bed, bams):
     return merged_df, ref_reg_df.shape[1], bam_df.shape[1]
 
 
-def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fig_name):
+def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fig_name, use_ref_and_reg = True):
     print(bam_indexes)
     df = df[df['percent'] > 0]
     samp_name_set = list(set(sample_names))
@@ -186,13 +186,13 @@ def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fi
 
     for samp_name in list(set(sample_names)):
         custom_lines.append(mpatches.Patch(color=color_map[samp_name]))
-
-    ax2 = ax.twinx()
-    plotting_df = pd.DataFrame({'ref_col': list(df[ref_col]), 'reg_col': list(df[region_col])})
-    plotting_df.plot.line(ax=ax2)
-    ax2.set_xlabel('Percent GC')
-    ax2.set_ylabel('Normalized Coverage')
-    ax2.legend(loc='upper right', frameon=False)
+    if use_ref_and_reg:
+        ax2 = ax.twinx()
+        plotting_df = pd.DataFrame({'ref_col': list(df[ref_col]), 'reg_col': list(df[region_col])})
+        plotting_df.plot.line(ax=ax2)
+        ax2.set_xlabel('Percent GC')
+        ax2.set_ylabel('Normalized Coverage')
+        ax2.legend(loc='upper right', frameon=False)
 
     # Hide the right and top spines
     ax.spines['right'].set_visible(False)
@@ -206,7 +206,6 @@ def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fi
     # plt.legend(custom_lines, samples, frameon=False, loc='upper left')
     ax.legend(custom_lines, sample_names, frameon=False, loc='upper left')
     plt.xlabel('% GC')
-    ax2.set_ylabel('Normalized Coverage')
     plt.savefig(fig_name)
     plt.clf()
 
@@ -348,9 +347,9 @@ def run_analyses(ref, bams, beds, results_dir):
                    results_dir + 'joint_prob_capture_tech.png')
     # observed expected difference
     make_line_plot(df, 'ref_norm', 'region_norm', ob_exp_bam_indexes, tech_one, 'Observed - Expected',
-                   results_dir + 'obs_exp_library_prep.png')
+                   results_dir + 'obs_exp_library_prep.png',False)
     make_line_plot(df, 'ref_norm', 'region_norm', ob_exp_bam_indexes, tech_two, 'Observed - Expected',
-                   results_dir + 'obs_exp_capture_tech.png')
+                   results_dir + 'obs_exp_capture_tech.png',False)
     return df, norm_bam_indexes, samp_ssd_dict
 
 
