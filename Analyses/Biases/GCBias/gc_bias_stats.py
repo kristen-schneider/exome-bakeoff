@@ -159,7 +159,7 @@ def get_gc_bias_df(ref, bed, bams):
     return merged_df, ref_reg_df.shape[1], bam_df.shape[1]
 
 
-def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fig_name, use_ref_and_reg = True):
+def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fig_name, use_ref_and_reg=True):
     print(bam_indexes)
     df = df[df['percent'] > 0]
     samp_name_set = list(set(sample_names))
@@ -248,7 +248,8 @@ def make_ssd_table(dd, figname):
 
     fig, ax = plt.subplots()
     fig.set_size_inches(8.5, 15)
-    ax.table(cellText=cells_ar, cellColours=background_df.to_numpy(), loc='center')
+    ax.table(cellText=cells_ar, cellColours=background_df.to_numpy(), colLabels=['SSD', 'Library Prep', 'Capture Tech'],
+             loc='center')
     ax.axis('tight')
     ax.axis('off')
     plt.savefig(figname)
@@ -326,7 +327,7 @@ def run_analyses(ref, bams, beds, results_dir):
         index += 1
 
     # make table
-    make_ssd_table(samp_ssd_dict,results_dir + 'ssd_table.png')
+    make_ssd_table(samp_ssd_dict, results_dir + 'ssd_table.png')
     # plot heat map
     plot_heat_map(df, norm_bam_indexes, results_dir + 'norm_heat_map.png')
     plot_heat_map(df, list(range(3, 61)), results_dir + '59_genes_heat_map.png')
@@ -347,9 +348,9 @@ def run_analyses(ref, bams, beds, results_dir):
                    results_dir + 'joint_prob_capture_tech.png')
     # observed expected difference
     make_line_plot(df, 'ref_norm', 'region_norm', ob_exp_bam_indexes, tech_one, 'Observed - Expected',
-                   results_dir + 'obs_exp_library_prep.png',False)
+                   results_dir + 'obs_exp_library_prep.png', False)
     make_line_plot(df, 'ref_norm', 'region_norm', ob_exp_bam_indexes, tech_two, 'Observed - Expected',
-                   results_dir + 'obs_exp_capture_tech.png',False)
+                   results_dir + 'obs_exp_capture_tech.png', False)
     return df, norm_bam_indexes, samp_ssd_dict
 
 
