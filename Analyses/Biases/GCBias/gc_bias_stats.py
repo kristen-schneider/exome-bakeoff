@@ -286,7 +286,9 @@ def run_analyses(ref, bams, beds, results_dir):
     sample_names = [list(df.columns)[x] for x in bam_indexes]
     tech_one = [re.sub('-.*-.*', '', x) for x in sample_names]
     tech_two = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in sample_names]
-
+    pickle.dump(df,open('df.pickle','wb'))
+    pickle.dump(tech_one, open('tech_one.pickle', 'wb'))
+    pickle.dump(tech_two, open('tech_two.pickle', 'wb'))
     # normalize each of the samples
     norm_names = [[list(df.columns)[x], 'norm_' + list(df.columns)[x]] for x in bam_indexes]
     for names in norm_names:
