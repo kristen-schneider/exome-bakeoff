@@ -159,12 +159,12 @@ def get_gc_bias_df(ref, bed, bams):
     return merged_df, ref_reg_df.shape[1], bam_df.shape[1]
 
 
-def make_line_plot(df, ref_col,region_col, bam_indexes,sample_names, y_lab, fig_name):
+def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fig_name):
     print(bam_indexes)
     df = df[df['percent'] > 0]
     samp_name_set = list(set(sample_names))
-    colors = ['b','g','r','c','m','y','k','orange', 'purple']
-    widths = list(range(len(samp_name_set),0,-1))
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'purple']
+    widths = list(range(len(samp_name_set), 0, -1))
     print(widths)
     print(df.shape)
     samples = [list(df.columns)[x] for x in bam_indexes]
@@ -188,7 +188,7 @@ def make_line_plot(df, ref_col,region_col, bam_indexes,sample_names, y_lab, fig_
         custom_lines.append(mpatches.Patch(color=color_map[samp_name]))
 
     ax2 = ax.twinx()
-    plotting_df = pd.DataFrame({'ref_col':list(df[ref_col]),'reg_col':list(df[region_col])})
+    plotting_df = pd.DataFrame({'ref_col': list(df[ref_col]), 'reg_col': list(df[region_col])})
     plotting_df.plot.line(ax=ax2)
     ax2.set_xlabel('Percent GC')
     ax2.set_ylabel('Normalized Coverage')
@@ -210,8 +210,9 @@ def make_line_plot(df, ref_col,region_col, bam_indexes,sample_names, y_lab, fig_
     plt.savefig(fig_name)
     plt.clf()
 
+
 # make a heat map plotting function
-def plot_heat_map(df,col_indexes,figname):
+def plot_heat_map(df, col_indexes, figname):
     columns = [list(df.columns)[x] for x in col_indexes]
     plot_data = df[df.columns.intersection(columns)]
     fig, ax = plt.subplots()
@@ -224,6 +225,34 @@ def plot_heat_map(df,col_indexes,figname):
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     plt.savefig(figname)
     plt.clf()
+
+
+def make_ssd_table(dd, figname):
+    ssd_df = pd.DataFrame(dd).T
+    ssd_df.columns = ['SSD', 'Library Prep', 'Capture Tech']
+    # sort ascending
+    ssd_df = ssd_df.sort_values('SSD')
+
+    cells_ar = ssd_df.to_numpy()
+    lib_preps = list(set(ssd_df['Library Prep']))
+    capt_tech = list(set(ssd_df['Capture Tech']))
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'purple']
+
+    color_lib_map = {lib_preps[x]: colors[x] for x in range(len(lib_preps))}
+    color_capt_map = {capt_tech[x]: colors[x] for x in range(len(capt_tech))}
+    lib_colors = [color_lib_map[x] for x in list(ssd_df['Library Prep'])]
+    tech_colors = [color_capt_map[x] for x in list(ssd_df['Capture Tech'])]
+    background_df = ssd_df.copy()
+    background_df['SSD'] = 'w'
+    background_df['Library Prep'] = lib_colors
+    background_df['Capture Tech'] = tech_colors
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8.5, 15)
+    ax.table(cellText=cells_ar, cellColours=background_df.to_numpy(), loc='center')
+    ax.axis('tight')
+    ax.axis('off')
+    plt.savefig(figname)
 
 
 def run_analyses(ref, bams, beds, results_dir):
@@ -259,7 +288,7 @@ def run_analyses(ref, bams, beds, results_dir):
     tech_two = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in sample_names]
 
     # normalize each of the samples
-    norm_names = [ [list(df.columns)[x],'norm_'+list(df.columns)[x]] for x in bam_indexes]
+    norm_names = [[list(df.columns)[x], 'norm_' + list(df.columns)[x]] for x in bam_indexes]
     for names in norm_names:
         df[names[1]] = df[names[0]] / sum(df[names[0]])
     norm_bam_indexes = [x + len(bam_indexes) + num_previously_added_cols for x in bam_indexes]
@@ -295,10 +324,13 @@ def run_analyses(ref, bams, beds, results_dir):
         samp_ssd_dict[col_name].append(sum(df[col_name] * df[col_name]))
         samp_ssd_dict[col_name].append(tech_one[index])
         samp_ssd_dict[col_name].append(tech_two[index])
+        index += 1
 
+    # make table
+    make_ssd_table(samp_ssd_dict,results_dir + 'ssd_table.png')
     # plot heat map
-    plot_heat_map(df,norm_bam_indexes,results_dir + 'norm_heat_map.png')
-    plot_heat_map(df, list(range(3,61)), results_dir + '59_genes_heat_map.png')
+    plot_heat_map(df, norm_bam_indexes, results_dir + 'norm_heat_map.png')
+    plot_heat_map(df, list(range(3, 61)), results_dir + '59_genes_heat_map.png')
     # make the line plots
     make_line_plot(df, 'ref_norm', 'region_norm', bam_indexes, tech_one, 'Count',
                    results_dir + 'raw_count_library_prep.png')
@@ -320,8 +352,6 @@ def run_analyses(ref, bams, beds, results_dir):
     make_line_plot(df, 'ref_norm', 'region_norm', ob_exp_bam_indexes, tech_two, 'Observed - Expected',
                    results_dir + 'obs_exp_capture_tech.png')
     return df, norm_bam_indexes, samp_ssd_dict
-
-
 
 
 if __name__ == "__main__":
@@ -355,8 +385,4 @@ if __name__ == "__main__":
 
     # run the analysis
     df, norm_indexes, samp_ssd_dict = run_analyses(ref, bams, beds, res)
-    pickle.dump(samp_ssd_dict,open('samp_ssd_dict.pickle','wb'))
-
-
-
-
+    pickle.dump(samp_ssd_dict, open('samp_ssd_dict.pickle', 'wb'))
