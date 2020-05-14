@@ -272,6 +272,30 @@ def run_analyses(ref, bams, beds, results_dir):
     joint_prob_bam_indexes = [x + len(bam_indexes) + num_previously_added_cols for x in bam_indexes]
     num_previously_added_cols += len(bam_indexes)
 
+    # get expected coverage of each sample
+    exp_names = [[list(df.columns)[x], 'exp_' + list(df.columns)[x]] for x in bam_indexes]
+    for names in exp_names:
+        df[names[1]] = df['region_norm'] * sum(df[names[0]])
+    exp_bam_indexes = [x + len(bam_indexes) + num_previously_added_cols for x in bam_indexes]
+    num_previously_added_cols += len(bam_indexes)
+
+    # observed vs expected
+    o_e_dif_names = [[list(df.columns)[x], 'o_e_dif_' + list(df.columns)[x]] for x in bam_indexes]
+    for names in o_e_dif_names:
+        df[names[1]] = df[names[0]] - df['exp_' + names[0]]
+    ob_exp_bam_indexes = [x + len(bam_indexes) + num_previously_added_cols for x in bam_indexes]
+    num_previously_added_cols += len(bam_indexes)
+
+    # SSD
+    samp_ssd_dict = {}
+    index = 0
+    for x in bam_indexes:
+        col_name = list(df.columns)[x]
+        samp_ssd_dict[col_name] = []
+        samp_ssd_dict[col_name].append(sum(df[col_name] * df[col_name]))
+        samp_ssd_dict[col_name].append(tech_one[index])
+        samp_ssd_dict[col_name].append(tech_two[index])
+
     # plot heat map
     plot_heat_map(df,norm_bam_indexes,results_dir + 'norm_heat_map.png')
     plot_heat_map(df, list(range(3,61)), results_dir + '59_genes_heat_map.png')
@@ -285,12 +309,17 @@ def run_analyses(ref, bams, beds, results_dir):
                    results_dir + 'norm_count_library_prep.png')
     make_line_plot(df, 'ref_norm', 'region_norm', norm_bam_indexes, tech_two, 'Normalized count',
                    results_dir + 'norm_count_capture_tech.png')
-    # joint probaility
+    # joint probability
     make_line_plot(df, 'ref_norm', 'region_norm', joint_prob_bam_indexes, tech_one, 'Joint probability',
                    results_dir + 'joint_prob_library_prep.png')
     make_line_plot(df, 'ref_norm', 'region_norm', joint_prob_bam_indexes, tech_two, 'Joint probability',
                    results_dir + 'joint_prob_capture_tech.png')
-    return df, norm_bam_indexes
+    # observed expected difference
+    make_line_plot(df, 'ref_norm', 'region_norm', ob_exp_bam_indexes, tech_one, 'Observed - Expected',
+                   results_dir + 'obs_exp_library_prep.png')
+    make_line_plot(df, 'ref_norm', 'region_norm', ob_exp_bam_indexes, tech_two, 'Observed - Expected',
+                   results_dir + 'obs_exp_capture_tech.png')
+    return df, norm_bam_indexes, samp_ssd_dict
 
 
 
@@ -325,7 +354,8 @@ if __name__ == "__main__":
             beds.append(bed_template + file)
 
     # run the analysis
-    df, norm_indexes = run_analyses(ref, bams, beds, res)
+    df, norm_indexes, samp_ssd_dict = run_analyses(ref, bams, beds, res)
+    pickle.dump(samp_ssd_dict,open('samp_ssd_dict.pickle','wb'))
 
 
 
