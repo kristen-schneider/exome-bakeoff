@@ -1,3 +1,4 @@
+# General Workflow
 in conda environemnt with modules:
 pysam
 numpy
@@ -12,6 +13,11 @@ run the following line of code, first <br>
 **-r** path to regions direcotry (e.g. path to 59 ACMG genes)<br>
 **-m** metric which we want to calculate (e.g. quality)<br>
 
-## pileup_main.py
+# Specific file functions
+### pileup_main.py
+iterates through the directory of pileup files. for each pileup file, it will call the script single_pileup.py.
+
+### sigle_pileup.py
+
 
 
