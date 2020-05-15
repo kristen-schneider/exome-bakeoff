@@ -5,7 +5,7 @@ import pandas as pd
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
+
 import re
 import numpy as np
 import sys
@@ -207,51 +207,6 @@ def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fi
     plt.clf()
 
 
-# make a heat map plotting function
-def plot_heat_map(df, col_indexes, figname):
-    columns = [list(df.columns)[x] for x in col_indexes]
-    plot_data = df[df.columns.intersection(columns)]
-    fig, ax = plt.subplots()
-    fig.set_size_inches(35, 25)
-    ax.set_xticks(np.arange(len(columns)))
-    ax.set_xticklabels(columns)
-    ax.set_ylabel('% GC')
-    plt.imshow(plot_data)
-    plt.colorbar(cmap='cold')
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-    plt.savefig(figname)
-    plt.clf()
-
-
-def make_ssd_table(dd, figname):
-    ssd_df = pd.DataFrame(dd).T
-    ssd_df.columns = ['SSD', 'Library Prep', 'Capture Tech']
-    # sort ascending
-    ssd_df = ssd_df.sort_values('SSD')
-
-    cells_ar = ssd_df.to_numpy()
-    lib_preps = list(set(ssd_df['Library Prep']))
-    capt_tech = list(set(ssd_df['Capture Tech']))
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'purple']
-
-    color_lib_map = {lib_preps[x]: colors[x] for x in range(len(lib_preps))}
-    color_capt_map = {capt_tech[x]: colors[x] for x in range(len(capt_tech))}
-    lib_colors = [color_lib_map[x] for x in list(ssd_df['Library Prep'])]
-    tech_colors = [color_capt_map[x] for x in list(ssd_df['Capture Tech'])]
-    background_df = ssd_df.copy()
-    background_df['SSD'] = 'w'
-    background_df['Library Prep'] = lib_colors
-    background_df['Capture Tech'] = tech_colors
-
-    fig, ax = plt.subplots()
-    fig.set_size_inches(8.5, 15)
-    ax.table(cellText=cells_ar, cellColours=background_df.to_numpy(), colLabels=['SSD', 'Library Prep', 'Capture Tech'],
-             loc='center')
-    ax.axis('tight')
-    ax.axis('off')
-    plt.savefig(figname)
-
-
 def run_analyses(ref, bams, beds, results_dir):
     # make location to store intermediate files
     if results_dir[-1] != '/':
@@ -282,9 +237,14 @@ def run_analyses(ref, bams, beds, results_dir):
     sample_names = [list(df.columns)[x] for x in bam_indexes]
     tech_one = [re.sub('-.*-.*', '', x) for x in sample_names]
     tech_two = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in sample_names]
-    pickle.dump(df,open('df.pickle','wb'))
-    pickle.dump(tech_one, open('tech_one.pickle', 'wb'))
-    pickle.dump(tech_two, open('tech_two.pickle', 'wb'))
+
+    reg_df = df.iloc[:, 3:ref_shape]
+    print('Shape Reg DF: ' + str(reg_df.shape) + ' should be 101 x 59')
+    samp_df = df.iloc[:, ref_shape:ref_shape + bam_shape]
+    print('Shape Samp DF: ' + str(samp_df.shape) + ' should be 101 x 68')
+
+    make_heat_maps(reg_df, samp_df, results_dir)
+
     # normalize each of the samples
     norm_names = [[list(df.columns)[x], 'norm_' + list(df.columns)[x]] for x in bam_indexes]
     for names in norm_names:
@@ -313,22 +273,6 @@ def run_analyses(ref, bams, beds, results_dir):
     ob_exp_bam_indexes = [x + len(bam_indexes) + num_previously_added_cols for x in bam_indexes]
     num_previously_added_cols += len(bam_indexes)
 
-    # SSD
-    samp_ssd_dict = {}
-    index = 0
-    for x in bam_indexes:
-        col_name = list(df.columns)[x]
-        samp_ssd_dict[col_name] = []
-        samp_ssd_dict[col_name].append(sum(df[col_name] * df[col_name]))
-        samp_ssd_dict[col_name].append(tech_one[index])
-        samp_ssd_dict[col_name].append(tech_two[index])
-        index += 1
-
-    # make table
-    make_ssd_table(samp_ssd_dict, results_dir + 'ssd_table.png')
-    # plot heat map
-    plot_heat_map(df, norm_bam_indexes, results_dir + 'norm_heat_map.png')
-    plot_heat_map(df, list(range(3, 61)), results_dir + '59_genes_heat_map.png')
     # make the line plots
     make_line_plot(df, 'ref_norm', 'region_norm', bam_indexes, tech_one, 'Count',
                    results_dir + 'raw_count_library_prep.png')
@@ -349,7 +293,101 @@ def run_analyses(ref, bams, beds, results_dir):
                    results_dir + 'obs_exp_library_prep.png', False)
     make_line_plot(df, 'ref_norm', 'region_norm', ob_exp_bam_indexes, tech_two, 'Observed - Expected',
                    results_dir + 'obs_exp_capture_tech.png', False)
-    return df, norm_bam_indexes, samp_ssd_dict
+
+
+"""
+Given:
+regions_df - (pandas DataFrame) columns are genes, rows are percent GC, cells are coverage at that % gc
+samples_df - (pandas DataFrame) columns are samples, rows are percent GC, cells are coverage at that % gc
+Computes an SSD (sum squared difference) of observed vs expected % gc coverage for each sample and each gene
+Returns pandas DataFrame, list of column names, list of row names
+"""
+
+
+def get_ssd_heat_map_data(regions_df, samples_df):
+    ssd_dict = {}
+    tidy = {}
+    tidy['sample'] = []
+    tidy['gene'] = []
+    tidy['ssd'] = []
+    tidy['library_prep'] = []
+    tidy['capture_tech'] = []
+    for reg_col in list(regions_df.columns):
+        reg_sub = regions_df[reg_col]
+        reg_sub_norm = reg_sub / sum(reg_sub)
+        gene_ssd = []
+        for samp_col in list(samples_df.columns):
+            expected = reg_sub_norm * sum(samples_df[samp_col])
+            diff = expected - samples_df[samp_col]
+            ssd = sum(diff * diff)
+            gene_ssd.append(ssd)
+            lib_prep = re.sub('-.*-.*', '', samp_col)
+            capture_tech = re.sub('.*-(\\w+)-.*', '\\1', samp_col)
+            tidy['sample'].append(samp_col)
+            tidy['gene'].append(reg_col)
+            tidy['ssd'].append(ssd)
+            tidy['library_prep'].append(lib_prep)
+            tidy['capture_tech'].append(capture_tech)
+        ssd_dict[reg_col] = gene_ssd
+    df = pd.DataFrame(ssd_dict)
+    df.index = list(samples_df.columns)
+    tidy_df = pd.DataFrame(tidy)
+
+    return df, list(df.columns), list(df.index)
+
+
+"""
+Given:
+df - (pandas DataFrame) columns are genes, rows are samples
+tech_col - (string), name of column to be removed from dataframe and used as technology color labels
+title - (string) title of plot
+figname - (string) path to where the figure should be saved
+Creates hierarchically clustered heat map of the data and saves at the provided location
+"""
+
+
+def plot_clustered_heat_map(df, tech_col, title, figname):
+    technology = df.pop(tech_col)
+
+    lut = dict(zip(np.unique(technology), 'mkygbr'))
+    row_colors = pd.Series(technology, name='library prep tech').map(lut)
+
+    g = sns.clustermap(df,
+                       figsize=(25, 30),
+                       cmap="RdBu",
+                       row_colors=row_colors)
+
+    g.fig.suptitle(title)
+
+    plt.savefig(figname,
+                dpi=150,
+                figsize=(25, 30))
+
+
+"""
+Given:
+regions_df - (pandas DataFrame) columns are genes, rows are percent GC, cells are coverage at that % gc
+samples_df - (pandas DataFrame) columns are samples, rows are percent GC, cells are coverage at that % gc
+results_dir - (string) path to where figures should be saved
+Computes an SSD (sum squared difference) of observed vs expected % gc coverage for each sample and each gene
+Plots SSD using hierarchically save two figures, one for library prep, one for technology
+"""
+
+
+def make_heat_maps(reg_df, samp_df, results_dir):
+    ssd, col_names, row_names = get_ssd_heat_map_data(reg_df, samp_df)
+
+    ssd_lib = ssd.copy()
+    ssd_lib['technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
+    ssd_capt = ssd.copy()
+    ssd_capt['technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
+
+    ssd_lib.index = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
+    ssd_capt.index = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
+    plot_clustered_heat_map(ssd_lib, 'technology', 'Library prep SSD of expected vs observed % GC coverage',
+                            results_dir + 'lib_prep_ssd_heat_map.png')
+    plot_clustered_heat_map(ssd_capt, 'technology', 'Capture technology SSD of expected vs observed % GC coverage',
+                            results_dir + 'capt_tech_ssd_heat_map.png')
 
 
 if __name__ == "__main__":
@@ -382,5 +420,8 @@ if __name__ == "__main__":
             beds.append(bed_template + file)
 
     # run the analysis
-    df, norm_indexes, samp_ssd_dict = run_analyses(ref, bams, beds, res)
-    pickle.dump(samp_ssd_dict, open('samp_ssd_dict.pickle', 'wb'))
+    run_analyses(ref, bams, beds, res)
+
+# df = pickle.load(open('df.pickle', 'rb'))
+# reg_df = df.iloc[:, 3:61]
+# samp_df = df.iloc[:, 61:129]
