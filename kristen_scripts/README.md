@@ -5,8 +5,8 @@ numpy
 
 run the following line of code, first <br>
 `python3 ./kristen_scripts/pileup_main.py`<br>
-  `    -p /Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_files/`<br>
-  `    -r /Shares/layer_shared/projects/chco/exome_bakeoff/Analyses/Biases/GCBias/acmg_all_59.bed`<br>
+  `    -p /Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_downsample_tbi/`<br>
+  `    -r /Shares/layer_shared/projects/chco/exome_bakeoff`<br>
   `    -m quality`<br>
 
 **-p** path to downsampled pileups<br>
