@@ -1,4 +1,5 @@
 import pysam
+import os
 from quality import main_quality
 
 
@@ -8,16 +9,19 @@ def main_single_pileup(tbx_pileup_file, regions_dir, metrics_list, sample_name):
 
 def read_regions(tbx_pileup_file, regions_dir, metrics_list, sample_name):
 
+    # regions_dir
+    region = regions_dir.split('/')[7]
+
     # open files to store metrics for plotting
     for metric in metrics_list:
-        metric_output_txt = open("/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/" + metric + "/metric_files/" + sample_name + "_" + metric + ".txt", 'a')
+        metric_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/" + metric + "/" + region + "/downsampled/metric_files/" + sample_name + "_" + metric + ".txt", 'a')
         metric_output_txt.truncate(0)
 
     #regions_file_read = open(regions_dir, 'r')
 
     # iterate through all bed files in regions directory
-    for bed_file in regions_dir:
-        gene_bed = open(bed_file, 'r')
+    for bed_file in os.listdir(regions_dir):
+        gene_bed = open(regions_dir + bed_file, 'r')
         gene_name = bed_file.split('.')[0]
 
         # go through the lines for each region file
@@ -39,10 +43,9 @@ def read_regions(tbx_pileup_file, regions_dir, metrics_list, sample_name):
                 end = row[2]
 
                 if "quality" in metrics_list:
-                    quality_output_txt = open("/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/quality/metric_files/" + sample_name + "_quality.txt", 'a')
+                    quality_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/" + metric + "/" + region + "/downsampled/metric_files/" + sample_name + "_" + metric + ".txt", 'a')
 
                     quality = main_quality(row)
-
                     # format: chrm, start, end, quality_score
                     quality_output_txt.write(
                         chrm + '\t' + start + '\t' + end + '\t' + str(quality) + '\t' + gene_name + '\n')
