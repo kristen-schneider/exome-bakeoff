@@ -422,6 +422,23 @@ if __name__ == "__main__":
     # run the analysis
     run_analyses(ref, bams, beds, res)
 
+# # plot debugging code
 # df = pickle.load(open('df.pickle', 'rb'))
 # reg_df = df.iloc[:, 3:61]
 # samp_df = df.iloc[:, 61:129]
+# results_dir = ''
+#
+# ssd, col_names, row_names = get_ssd_heat_map_data(reg_df, samp_df)
+#
+# ssd_lib = ssd.copy()
+# ssd_lib['technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
+# ssd_capt = ssd.copy()
+# ssd_capt['technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
+#
+# ssd_lib.index = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
+# ssd_capt.index = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
+#
+# plot_clustered_heat_map(ssd_lib, 'technology', 'Library prep SSD of expected vs observed % GC coverage',
+#                         results_dir + 'lib_prep_ssd_heat_map.png')
+# plot_clustered_heat_map(ssd_capt, 'technology', 'Capture technology SSD of expected vs observed % GC coverage',
+#                         results_dir + 'capt_tech_ssd_heat_map.png')
