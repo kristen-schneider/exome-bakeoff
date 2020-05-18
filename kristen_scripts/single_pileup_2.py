@@ -16,7 +16,7 @@ def main_single_pileup(tbx_pileup_file, regions_path, metrics_options, sample_na
 def read_regions(tbx_pileup_file, regions_path, metrics_options, sample_name):
 
     # open files to store metrics for plotting
-    quality_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/quality/metric_files/" + sample_name + "-QUALITY.txt", 'a')
+    quality_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/quality/oncogenes/downsampled/metric_files/" + sample_name + "-QUALITY.txt", 'a')
     quality_output_txt.truncate(0)
 
     # go through directory of regions files
