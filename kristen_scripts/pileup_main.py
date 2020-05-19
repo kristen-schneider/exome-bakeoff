@@ -1,7 +1,7 @@
 import argparse
 import os
 import pysam
-from single_pileup_2 import main_single_pileup
+from single_pileup import main_single_pileup
 
 def main_pileup():
     # store arguments from command line
