@@ -44,6 +44,15 @@ def main_heatmap():
 
             all_sample_metrcis.append(metrics_sorted_by_gene)
 
+    max = 0
+    min = 100
+    for m in all_sample_metrcis:
+        for i in m:
+            if i > max: max = i
+            if i < min: min = i
+    print(max)
+    print(min)
+
     plot_heatmap(sample_names, gene_names, all_sample_metrcis, TITLE, heatmaps_figure_path)
 
 def plot_heatmap(sample_names, gene_names, all_sample_metrcis, title, heatmaps_figure_path):
@@ -56,6 +65,7 @@ def plot_heatmap(sample_names, gene_names, all_sample_metrcis, title, heatmaps_f
     plt.title(title)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     plt.imshow(all_sample_metrcis)
+    plt.clim(vmin=35, vmax=55)
     plt.colorbar(cmap='cold')
     plt.savefig(heatmaps_figure_path + title+'.png', dpi=100)
 
