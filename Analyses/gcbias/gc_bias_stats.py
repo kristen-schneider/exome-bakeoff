@@ -160,8 +160,6 @@ def get_gc_bias_df(ref, bed, bams):
 
 
 def make_line_plot(df, ref_col, region_col, bam_indexes, sample_names, y_lab, fig_name, use_ref_and_reg=True):
-    print('Sample Names')
-    print(sample_names)
     df = df[df['percent'] > 0]
     samp_name_set = list(set(sample_names))
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'purple']
@@ -239,9 +237,7 @@ def run_analyses(ref, bams, beds, results_dir):
     tech_two = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in sample_names]
 
     reg_df = df.iloc[:, 3:ref_shape]
-    print('Shape Reg DF: ' + str(reg_df.shape) + ' should be 101 x 59')
     samp_df = df.iloc[:, ref_shape:ref_shape + bam_shape]
-    print('Shape Samp DF: ' + str(samp_df.shape) + ' should be 101 x 68')
 
     make_heat_maps(reg_df, samp_df, results_dir)
 
@@ -342,11 +338,12 @@ df - (pandas DataFrame) columns are genes, rows are samples
 tech_col - (string), name of column to be removed from dataframe and used as technology color labels
 title - (string) title of plot
 figname - (string) path to where the figure should be saved
+colorscheme - (string) default 'RdBu' the matplotlib color scheme to be used
 Creates hierarchically clustered heat map of the data and saves at the provided location
 """
 
 
-def plot_clustered_heat_map(df, tech_col, title, figname):
+def plot_clustered_heat_map(df, tech_col, title, figname, colorscheme='RdBu'):
     technology = df.pop(tech_col)
 
     lut = dict(zip(np.unique(technology), 'mkygbr'))
@@ -354,8 +351,44 @@ def plot_clustered_heat_map(df, tech_col, title, figname):
 
     g = sns.clustermap(df,
                        figsize=(25, 30),
-                       cmap="RdBu",
+                       cmap=colorscheme,
                        row_colors=row_colors)
+
+    g.fig.suptitle(title)
+
+    plt.savefig(figname,
+                dpi=150,
+                figsize=(25, 30))
+
+
+"""
+Given:
+df - (pandas DataFrame) columns are genes, rows are samples
+lib_col - (string), name of column to be removed from dataframe and used as library_prep color labels
+capture_col - (string), name of column to be removed from dataframe and used as capture_technology color labels
+title - (string) title of plot
+figname - (string) path to where the figure should be saved
+colorscheme - (string) default 'RdBu' the matplotlib color scheme to be used
+Creates hierarchically clustered heat map of the data and saves at the provided location
+"""
+
+
+def plot_clustered_heat_map_double_label(df, lib_col, capture_col, title, figname, colorscheme='RdBu'):
+    lib_prep_technology = df.pop(lib_col)
+    capture_technology = df.pop(capture_col)
+
+    lut = dict(zip(np.unique(lib_prep_technology), 'mkygbr'))
+    lib_row_colors = pd.Series(lib_prep_technology, name='library prep tech').map(lut)
+
+    lut = dict(zip(np.unique(capture_technology), 'mkygbr'))
+    capture_row_colors = pd.Series(capture_technology, name='capture tech').map(lut)
+
+    combine_colors = pd.DataFrame(lib_row_colors).join(pd.DataFrame(capture_row_colors))
+
+    g = sns.clustermap(df,
+                       figsize=(25, 30),
+                       cmap=colorscheme,
+                       row_colors=combine_colors)
 
     g.fig.suptitle(title)
 
@@ -377,17 +410,16 @@ Plots SSD using hierarchically save two figures, one for library prep, one for t
 def make_heat_maps(reg_df, samp_df, results_dir):
     ssd, col_names, row_names = get_ssd_heat_map_data(reg_df, samp_df)
 
-    ssd_lib = ssd.copy()
-    ssd_lib['technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
-    ssd_capt = ssd.copy()
-    ssd_capt['technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
+    ssd_both = ssd.copy()
+    ssd_both['lib_prep_technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_both.index)]
+    ssd_both['capture_technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_both.index)]
+    named_indexes = [list(ssd_both['lib_prep_technology'])[i] + ' ' + list(ssd_both['capture_technology'])[i] + ' ' * i
+                     for i in range(ssd_both.shape[0])]
+    ssd_both.index = named_indexes
 
-    ssd_lib.index = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
-    ssd_capt.index = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
-    plot_clustered_heat_map(ssd_lib, 'technology', 'Library prep SSD of expected vs observed % GC coverage',
-                            results_dir + 'lib_prep_ssd_heat_map.png')
-    plot_clustered_heat_map(ssd_capt, 'technology', 'Capture technology SSD of expected vs observed % GC coverage',
-                            results_dir + 'capt_tech_ssd_heat_map.png')
+    plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
+                             'SSD of expected vs observed % GC coverage',
+                             results_dir + 'combine_ssd_heat_map.png', 'plasma')
 
 
 if __name__ == "__main__":
@@ -435,10 +467,20 @@ if __name__ == "__main__":
 # ssd_capt = ssd.copy()
 # ssd_capt['technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
 #
+# ssd_both = ssd.copy()
+# ssd_both['lib_prep_technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
+# ssd_both['capture_technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
+# named_indexes = [list(ssd_both['lib_prep_technology'])[i] + ' ' + list(ssd_both['capture_technology'])[i] + ' ' * i for i in range(ssd_both.shape[0])]
+# ssd_both.index = named_indexes
+#
 # ssd_lib.index = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
 # ssd_capt.index = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
 #
 # plot_clustered_heat_map(ssd_lib, 'technology', 'Library prep SSD of expected vs observed % GC coverage',
-#                         results_dir + 'lib_prep_ssd_heat_map.png')
+#                         results_dir + 'lib_prep_ssd_heat_map.png', 'plasma')
 # plot_clustered_heat_map(ssd_capt, 'technology', 'Capture technology SSD of expected vs observed % GC coverage',
-#                         results_dir + 'capt_tech_ssd_heat_map.png')
+#                         results_dir + 'capt_tech_ssd_heat_map.png', 'plasma')
+#
+# plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
+#                          'SSD of expected vs observed % GC coverage',
+#                          results_dir + 'combine_ssd_heat_map.png', 'plasma')
