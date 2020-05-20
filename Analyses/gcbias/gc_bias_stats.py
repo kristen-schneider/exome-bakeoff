@@ -229,7 +229,7 @@ def run_analyses(ref, bams, beds, results_dir):
     df['ref_norm'] = df['ref_count'] / sum(df['ref_count'])
     df['region_norm'] = df['59 genes count'] / sum(df['59 genes count'])
     num_previously_added_cols = 2
-
+    pickle.dump(df, open('samples_run_analyses.pickle', 'wb'))
     # split the sample named into their library prep and capture tech
     bam_indexes = list(range(ref_shape, ref_shape + bam_shape))
     sample_names = [list(df.columns)[x] for x in bam_indexes]
@@ -301,6 +301,8 @@ Returns pandas DataFrame, list of column names, list of row names
 
 
 def get_ssd_heat_map_data(regions_df, samples_df):
+    pickle.dump(regions_df,open('regions_df_get_ssd_heat_map_data.pickle','wb'))
+    pickle.dump(samples_df, open('samples_df_get_ssd_heat_map_data.pickle', 'wb'))
     ssd_dict = {}
     tidy = {}
     tidy['sample'] = []
