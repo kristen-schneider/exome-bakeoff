@@ -71,7 +71,7 @@ def get_ref_region_df(ref, bed):
     # strip the file extension
     extension_less_name = re.sub('\\.\\w*', '', filename)
     cache_name = 'cache_' + extension_less_name + '.pickle'
-    if path.exists(cache_name):
+    if path.exists(cache_name) and False:
         print('Loading Reference and Bed Cache % GC info')
         return pickle.load(open(cache_name, 'rb'))
     print('Generating Reference and Bed Cache % GC info')
