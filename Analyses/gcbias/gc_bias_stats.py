@@ -239,7 +239,7 @@ def run_analyses(ref, bams, beds, results_dir):
     reg_df = df.iloc[:, 3:ref_shape]
     samp_df = df.iloc[:, ref_shape:ref_shape + bam_shape]
 
-    make_heat_maps(reg_df, samp_df, results_dir)
+    make_heat_map_and_related_plots(reg_df, samp_df, results_dir, combine_bed_path)
 
     # normalize each of the samples
     norm_names = [[list(df.columns)[x], 'norm_' + list(df.columns)[x]] for x in bam_indexes]
@@ -407,8 +407,12 @@ Plots SSD using hierarchically save two figures, one for library prep, one for t
 """
 
 
-def make_heat_maps(reg_df, samp_df, results_dir):
+def make_heat_map_and_related_plots(reg_df, samp_df, results_dir, bed):
     ssd, col_names, row_names = get_ssd_heat_map_data(reg_df, samp_df)
+
+    bed_df = pd.read_csv(bed, sep='\t', header=None)
+
+    plot_ssd_vs_gene_length(ssd, bed_df, results_dir)
 
     ssd_both = ssd.copy()
     ssd_both['lib_prep_technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_both.index)]
@@ -420,6 +424,37 @@ def make_heat_maps(reg_df, samp_df, results_dir):
     plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
                              'SSD of expected vs observed % GC coverage',
                              results_dir + 'combine_ssd_heat_map.png', 'plasma')
+
+
+def plot_ssd_vs_gene_length(ssd, bed_df, results_dir):
+    # scatter plot
+    fig, ax = plt.subplots()
+    fig.set_size_inches(10, 10)
+    gene_lengths = {}
+    for gene in ssd.columns:
+        sub = bed_df[bed_df[4] == gene]
+        # get the length, each end - start summed together
+        length = sum(sub[2] - sub[1])
+        gene_lengths[gene] = length
+        plt.scatter(([length] * ssd.shape[0]), ssd[gene])
+    plt.ylabel('Observed vs expected GC content SSD')
+    plt.xlabel('Log gene length')
+    ax.set_xscale('log')
+    plt.savefig(results_dir + 'gc_ssd_vs_gene_length.png')
+
+    plt.clf()
+    # box plots
+    # sort the genes by their length
+    sorted_gene_lengths = {k: v for k, v in sorted(gene_lengths.items(), key=lambda item: item[1])}
+    sorted_gene_names = list(sorted_gene_lengths.keys())
+    ssd_sorted = ssd.reindex(sorted_gene_names, axis=1)
+    fig, ax = plt.subplots()
+    fig.set_size_inches(15, 10)
+    ssd_sorted.plot(kind='box',ax=ax)
+    ax.set_xticklabels(ax.get_xticklabels(),rotation=60)
+    plt.ylabel('Observed vs expected GC content SSD')
+    plt.xlabel('Genes, sorted by ascending length')
+    plt.savefig(results_dir + 'gc_ssd_vs_gene_length_boxplots.png')
 
 
 if __name__ == "__main__":
@@ -454,7 +489,9 @@ if __name__ == "__main__":
     # run the analysis
     run_analyses(ref, bams, beds, res)
 
-# # plot debugging code
+
+# # # plot debugging code
+# bed = '/Users/michael/TESTBAMs/acmg_all_59.bed'
 # df = pickle.load(open('df.pickle', 'rb'))
 # reg_df = df.iloc[:, 3:61]
 # samp_df = df.iloc[:, 61:129]
@@ -462,24 +499,40 @@ if __name__ == "__main__":
 #
 # ssd, col_names, row_names = get_ssd_heat_map_data(reg_df, samp_df)
 #
-# ssd_lib = ssd.copy()
-# ssd_lib['technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
-# ssd_capt = ssd.copy()
-# ssd_capt['technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
-#
 # ssd_both = ssd.copy()
-# ssd_both['lib_prep_technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
-# ssd_both['capture_technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
+# ssd_both['lib_prep_technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_both.index)]
+# ssd_both['capture_technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_both.index)]
 # named_indexes = [list(ssd_both['lib_prep_technology'])[i] + ' ' + list(ssd_both['capture_technology'])[i] + ' ' * i for i in range(ssd_both.shape[0])]
 # ssd_both.index = named_indexes
 #
-# ssd_lib.index = [re.sub('-.*-.*', '', x) for x in list(ssd_lib.index)]
-# ssd_capt.index = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_capt.index)]
+# bed_df = pd.read_csv(bed,sep='\t',header=None)
 #
-# plot_clustered_heat_map(ssd_lib, 'technology', 'Library prep SSD of expected vs observed % GC coverage',
-#                         results_dir + 'lib_prep_ssd_heat_map.png', 'plasma')
-# plot_clustered_heat_map(ssd_capt, 'technology', 'Capture technology SSD of expected vs observed % GC coverage',
-#                         results_dir + 'capt_tech_ssd_heat_map.png', 'plasma')
+# fig, ax = plt.subplots()
+# fig.set_size_inches(10, 10)
+# gene_lengths = {}
+# for gene in col_names:
+#     sub = bed_df[bed_df[4] == gene]
+#     # get the length, each end - start summed together
+#     length = sum(sub[2] - sub[1])
+#     gene_lengths[gene] = length
+#     plt.scatter(([length] * ssd.shape[0]), ssd[gene])
+# plt.ylabel('Observed vs expected GC content SSD')
+# plt.xlabel('Log gene length')
+# ax.set_xscale('log')
+# plt.savefig('delete.png')
+#
+# plt.clf()
+# sorted_gene_lengths = {k: v for k, v in sorted(gene_lengths.items(), key=lambda item: item[1])}
+# sorted_gene_names = list(sorted_gene_lengths.keys())
+# ssd_sorted = ssd.reindex(sorted_gene_names, axis=1)
+# fig, ax = plt.subplots()
+# fig.set_size_inches(15, 10)
+# ssd_sorted.plot(kind='box',ax=ax)
+# ax.set_xticklabels(ax.get_xticklabels(),rotation=60)
+# plt.ylabel('Observed vs expected GC content SSD')
+# plt.xlabel('Genes, sorted by ascending length')
+# plt.savefig('delete.png')
+#
 #
 # plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
 #                          'SSD of expected vs observed % GC coverage',
