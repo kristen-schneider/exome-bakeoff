@@ -155,6 +155,7 @@ def get_bams_gc_df(bams, bed):
 def get_gc_bias_df(ref, bed, bams):
     bam_df = get_bams_gc_df(bams, bed)
     ref_reg_df = get_ref_region_df(ref, bed)
+    pickle.dump(ref_reg_df, open('ref_reg_df.pickle', 'wb'))
     merged_df = pd.concat([ref_reg_df, bam_df], axis=1).fillna(0)
     return merged_df, ref_reg_df.shape[1], bam_df.shape[1]
 
