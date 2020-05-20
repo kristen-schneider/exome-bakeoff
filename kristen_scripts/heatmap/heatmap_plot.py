@@ -57,17 +57,17 @@ def main_heatmap():
 
 def plot_heatmap(sample_names, gene_names, all_sample_metrcis, title, heatmaps_figure_path):
     fig, ax = plt.subplots()
+    fig.figsize = (40,30)
     fig.set_size_inches(35.0, 25.0)
     ax.set_xticks(np.arange(len(gene_names)))
     ax.set_yticks(np.arange(len(sample_names)))
     ax.set_xticklabels(gene_names)
     ax.set_yticklabels(sample_names)
-    plt.title(title)
+    ax.set_title(title)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-    plt.imshow(all_sample_metrcis, cmap='seismic', vmin=35, vmax=58)
-    #plt.clim(vmin=35, vmax=60)
+    plt.imshow(all_sample_metrcis, interpolation=None, cmap='coolwarm', vmin=35, vmax=58)
     plt.colorbar()
-    plt.savefig(heatmaps_figure_path + title+'.png', dpi=250)
+    plt.savefig(heatmaps_figure_path + title+'.png', dpi=150)
 
 # get the arguments from commandline run
 def get_cmdln_arguments():
