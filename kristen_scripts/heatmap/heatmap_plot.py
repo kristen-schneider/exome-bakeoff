@@ -44,20 +44,30 @@ def main_heatmap():
 
             all_sample_metrcis.append(metrics_sorted_by_gene)
 
+    max = 0
+    min = 100
+    for m in all_sample_metrcis:
+        for i in m:
+            if i > max: max = i
+            if i < min: min = i
+    print(max)
+    print(min)
+
     plot_heatmap(sample_names, gene_names, all_sample_metrcis, TITLE, heatmaps_figure_path)
 
 def plot_heatmap(sample_names, gene_names, all_sample_metrcis, title, heatmaps_figure_path):
     fig, ax = plt.subplots()
+    fig.figsize = (40,30)
     fig.set_size_inches(35.0, 25.0)
     ax.set_xticks(np.arange(len(gene_names)))
     ax.set_yticks(np.arange(len(sample_names)))
     ax.set_xticklabels(gene_names)
     ax.set_yticklabels(sample_names)
-    plt.title(title)
+    ax.set_title(title)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-    plt.imshow(all_sample_metrcis)
-    plt.colorbar(cmap='cold')
-    plt.savefig(heatmaps_figure_path + title+'.png', dpi=100)
+    plt.imshow(all_sample_metrcis, interpolation=None, cmap='coolwarm', vmin=35, vmax=58)
+    plt.colorbar()
+    plt.savefig(heatmaps_figure_path + title+'.png', dpi=150)
 
 # get the arguments from commandline run
 def get_cmdln_arguments():
