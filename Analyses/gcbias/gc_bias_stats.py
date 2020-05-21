@@ -437,18 +437,22 @@ def plot_ssd_vs_gene_length(ssd, bed_df, results_dir):
     fig, ax = plt.subplots()
     fig.set_size_inches(10, 10)
     gene_lengths = {}
+    ssd_means = {}
     for gene in ssd.columns:
         sub = bed_df[bed_df[4] == gene]
         # get the length, each end - start summed together
         length = sum(sub[2] - sub[1])
         gene_lengths[gene] = length
+        ssd_means[gene] = sum(ssd[gene]) / ssd.shape[1]
         plt.scatter(([length] * ssd.shape[0]), ssd[gene])
     plt.ylabel('Observed vs expected GC content SSD')
     plt.xlabel('Log gene length')
     ax.set_xscale('log')
     plt.savefig(results_dir + 'gc_ssd_vs_gene_length.png')
-
     plt.clf()
+    cor_coe = np.corrcoef(list(ssd_means.values()), list(gene_lengths.values()))[0, 1]
+    with open(results_dir + 'gene_size_ssd_correlation.txt','w') as file:
+        file.write('Pearson product-moment correlation coefficient: ' + str(cor_coe))
     # box plots
     # sort the genes by their length
     sorted_gene_lengths = {k: v for k, v in sorted(gene_lengths.items(), key=lambda item: item[1])}
@@ -495,7 +499,7 @@ if __name__ == "__main__":
     # run the analysis
     run_analyses(ref, bams, beds, res)
 
-
+#
 # # # plot debugging code
 # bed = '/Users/michael/TESTBAMs/acmg_all_59.bed'
 # df = pickle.load(open('df.pickle', 'rb'))
@@ -516,16 +520,21 @@ if __name__ == "__main__":
 # fig, ax = plt.subplots()
 # fig.set_size_inches(10, 10)
 # gene_lengths = {}
+# ssd_means = {}
 # for gene in col_names:
 #     sub = bed_df[bed_df[4] == gene]
 #     # get the length, each end - start summed together
 #     length = sum(sub[2] - sub[1])
 #     gene_lengths[gene] = length
+#     ssd_means[gene] = sum(ssd[gene]) / ssd.shape[1]
 #     plt.scatter(([length] * ssd.shape[0]), ssd[gene])
 # plt.ylabel('Observed vs expected GC content SSD')
 # plt.xlabel('Log gene length')
 # ax.set_xscale('log')
 # plt.savefig('delete.png')
+#
+# cor_coe = np.corrcoef(list(ssd_means.values()),list(gene_lengths.values()))[0,1]
+#
 #
 # plt.clf()
 # sorted_gene_lengths = {k: v for k, v in sorted(gene_lengths.items(), key=lambda item: item[1])}
@@ -539,7 +548,7 @@ if __name__ == "__main__":
 # plt.xlabel('Genes, sorted by ascending length')
 # plt.savefig('delete.png')
 #
-#
-# plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
-#                          'SSD of expected vs observed % GC coverage',
-#                          results_dir + 'combine_ssd_heat_map.png', 'plasma')
+# #
+# # plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
+# #                          'SSD of expected vs observed % GC coverage',
+# #                          results_dir + 'combine_ssd_heat_map.png', 'plasma')
