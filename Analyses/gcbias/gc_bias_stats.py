@@ -76,6 +76,8 @@ def get_ref_region_df(ref, bed):
         return pickle.load(open(cache_name, 'rb'))
     print('Generating Reference and Bed Cache % GC info')
     bed_df = pd.read_csv(bed, sep='\t')
+    pickle.dump(bed_df, open('bed_df.pickle', 'wb'))
+    pickle.dump(ref, open('ref.pickle', 'wb'))
     bed_gc_bin_counts = np.zeros(101)
     ref_gc_bin_counts = np.zeros(101)
     individual_gene_counts_dict = {}
