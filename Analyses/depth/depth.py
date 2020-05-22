@@ -11,9 +11,31 @@ import numpy as np
 import sys
 import matplotlib.patches as mpatches
 
-from Analyses.gcbias.gc_bias_stats import plot_clustered_heat_map_double_label
-
 sns.set_style("whitegrid", {'axes.grid': False})
+
+
+def plot_clustered_heat_map_double_label(df, lib_col, capture_col, title, figname, colorscheme='RdBu'):
+    lib_prep_technology = df.pop(lib_col)
+    capture_technology = df.pop(capture_col)
+
+    lut = dict(zip(np.unique(lib_prep_technology), 'mkygbr'))
+    lib_row_colors = pd.Series(lib_prep_technology, name='library prep tech').map(lut)
+
+    lut = dict(zip(np.unique(capture_technology), 'mkygbr'))
+    capture_row_colors = pd.Series(capture_technology, name='capture tech').map(lut)
+
+    combine_colors = pd.DataFrame(lib_row_colors).join(pd.DataFrame(capture_row_colors))
+
+    g = sns.clustermap(df,
+                       figsize=(25, 30),
+                       cmap=colorscheme,
+                       row_colors=combine_colors)
+
+    g.fig.suptitle(title)
+
+    plt.savefig(figname,
+                dpi=150,
+                figsize=(25, 30))
 
 
 def get_gene_coverage(bams, bed):
