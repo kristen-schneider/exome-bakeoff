@@ -16,7 +16,7 @@ from Analyses.gcbias.gc_bias_stats import plot_clustered_heat_map_double_label
 sns.set_style("whitegrid", {'axes.grid': False})
 
 
-def get_gene_coverage(bams,bed):
+def get_gene_coverage(bams, bed):
     print(bed)
     bed_df = pd.read_csv(bed, sep='\t', header=None)
     gene_coverage_dict = {}
@@ -38,7 +38,7 @@ def get_gene_coverage(bams,bed):
         bam_index += 1
         bam_obj = pysam.AlignmentFile(bam, "rb", require_index=False)
         line_count = 0
-        gene_coverages = { gene:0 for gene in set(bed_df[4])}
+        gene_coverages = {gene: 0 for gene in set(bed_df[4])}
         for line in open(bed, 'r'):
             bed_line = line.strip().split('\t')
             bed_contig = str(bed_line[0])
@@ -98,8 +98,8 @@ def run_analyses(ref, bams, beds, results_dir):
     norm_df['capture_technology'] = capt_tech
 
     plot_clustered_heat_map_double_label(df, 'lib_prep_technology', 'capture_technology',
-                             'Depth of coverage',
-                             results_dir + 'depth.png', 'plasma')
+                                         'Depth of coverage',
+                                         results_dir + 'depth.png', 'plasma')
     plot_clustered_heat_map_double_label(norm_df, 'lib_prep_technology', 'capture_technology',
                                          'Normalized depth of coverage',
                                          results_dir + 'normalized_depth.png', 'plasma')
