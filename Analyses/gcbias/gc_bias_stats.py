@@ -500,7 +500,7 @@ if __name__ == "__main__":
     run_analyses(ref, bams, beds, res)
 
 #
-# # # plot debugging code
+# # plot debugging code
 # bed = '/Users/michael/TESTBAMs/acmg_all_59.bed'
 # df = pickle.load(open('df.pickle', 'rb'))
 # reg_df = df.iloc[:, 3:61]
@@ -525,8 +525,9 @@ if __name__ == "__main__":
 #     sub = bed_df[bed_df[4] == gene]
 #     # get the length, each end - start summed together
 #     length = sum(sub[2] - sub[1])
-#     gene_lengths[gene] = length
-#     ssd_means[gene] = sum(ssd[gene]) / ssd.shape[1]
+#     if gene != 'MYL2' or True:
+#         gene_lengths[gene] = length
+#         ssd_means[gene] = sum(ssd[gene]) / ssd.shape[1]
 #     plt.scatter(([length] * ssd.shape[0]), ssd[gene])
 # plt.ylabel('Observed vs expected GC content SSD')
 # plt.xlabel('Log gene length')
@@ -535,20 +536,20 @@ if __name__ == "__main__":
 #
 # cor_coe = np.corrcoef(list(ssd_means.values()),list(gene_lengths.values()))[0,1]
 #
-#
-# plt.clf()
-# sorted_gene_lengths = {k: v for k, v in sorted(gene_lengths.items(), key=lambda item: item[1])}
-# sorted_gene_names = list(sorted_gene_lengths.keys())
-# ssd_sorted = ssd.reindex(sorted_gene_names, axis=1)
-# fig, ax = plt.subplots()
-# fig.set_size_inches(15, 10)
-# ssd_sorted.plot(kind='box',ax=ax)
-# ax.set_xticklabels(ax.get_xticklabels(),rotation=60)
-# plt.ylabel('Observed vs expected GC content SSD')
-# plt.xlabel('Genes, sorted by ascending length')
-# plt.savefig('delete.png')
-#
 # #
-# # plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
-# #                          'SSD of expected vs observed % GC coverage',
-# #                          results_dir + 'combine_ssd_heat_map.png', 'plasma')
+# # plt.clf()
+# # sorted_gene_lengths = {k: v for k, v in sorted(gene_lengths.items(), key=lambda item: item[1])}
+# # sorted_gene_names = list(sorted_gene_lengths.keys())
+# # ssd_sorted = ssd.reindex(sorted_gene_names, axis=1)
+# # fig, ax = plt.subplots()
+# # fig.set_size_inches(15, 10)
+# # ssd_sorted.plot(kind='box',ax=ax)
+# # ax.set_xticklabels(ax.get_xticklabels(),rotation=60)
+# # plt.ylabel('Observed vs expected GC content SSD')
+# # plt.xlabel('Genes, sorted by ascending length')
+# # plt.savefig('delete.png')
+# #
+# # #
+# # # plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
+# # #                          'SSD of expected vs observed % GC coverage',
+# # #                          results_dir + 'combine_ssd_heat_map.png', 'plasma')
