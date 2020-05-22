@@ -70,8 +70,7 @@ def get_gene_coverage(bams, bed):
             count = 0
             for read in bam_obj.fetch(contig=bed_contig, start=bed_start, stop=bed_end, until_eof=True):
                 count += 1
-            line_count += 1
-            gene_coverages[bed_gene] += 1
+                gene_coverages[bed_gene] += 1
         gene_coverage_dict[tail] = list(gene_coverages.values())
 
     coverage_df = pd.DataFrame(gene_coverage_dict).T
@@ -161,3 +160,4 @@ if __name__ == "__main__":
 
     # run the analysis
     d, n = run_analyses(ref, bams, beds, res)
+    pickle.dump(d, open('depth.pickle', 'wb'))
