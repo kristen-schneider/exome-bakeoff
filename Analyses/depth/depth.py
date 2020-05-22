@@ -98,8 +98,11 @@ def run_analyses(ref, bams, beds, results_dir):
     norm_df['capture_technology'] = capt_tech
 
     plot_clustered_heat_map_double_label(df, 'lib_prep_technology', 'capture_technology',
-                             'Depth of Coverage',
+                             'Depth of coverage',
                              results_dir + 'depth.png', 'plasma')
+    plot_clustered_heat_map_double_label(norm_df, 'lib_prep_technology', 'capture_technology',
+                                         'Normalized depth of coverage',
+                                         results_dir + 'normalized_depth.png', 'plasma')
     return df, norm_df
 
 
