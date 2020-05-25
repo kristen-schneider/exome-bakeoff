@@ -117,7 +117,10 @@ def run_analyses(ref, bams, beds, results_dir):
     df['capture_technology'] = capt_tech
     norm_df['lib_prep_technology'] = lib_preps
     norm_df['capture_technology'] = capt_tech
-
+    named_indexes = [list(norm_df['lib_prep_technology'])[i] + ' ' + list(norm_df['capture_technology'])[i] + ' ' * i
+                     for i in range(norm_df.shape[0])]
+    norm_df.index = named_indexes
+    df.index = named_indexes
     plot_clustered_heat_map_double_label(df, 'lib_prep_technology', 'capture_technology',
                                          'Depth of coverage',
                                          results_dir + 'depth.png', 'Blues_r')
