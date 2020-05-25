@@ -429,7 +429,7 @@ def make_heat_map_and_related_plots(reg_df, samp_df, results_dir, bed):
 
     plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
                              'SSD of expected vs observed % GC coverage',
-                             results_dir + 'combine_ssd_heat_map.png', 'plasma')
+                             results_dir + 'combine_ssd_heat_map.png', 'Blues_r')
 
 
 def plot_ssd_vs_gene_length(ssd, bed_df, results_dir):
@@ -552,4 +552,4 @@ if __name__ == "__main__":
 # # #
 # # # plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
 # # #                          'SSD of expected vs observed % GC coverage',
-# # #                          results_dir + 'combine_ssd_heat_map.png', 'plasma')
+# # #                          results_dir + 'combine_ssd_heat_map.png', 'Blues_r')
