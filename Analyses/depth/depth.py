@@ -5,11 +5,9 @@ import pandas as pd
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
-
 import re
 import numpy as np
 import sys
-import matplotlib.patches as mpatches
 
 sns.set_style("whitegrid", {'axes.grid': False})
 

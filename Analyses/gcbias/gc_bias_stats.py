@@ -243,6 +243,7 @@ def run_analyses(ref, bams, beds, results_dir):
     reg_df = df.iloc[:, 3:ref_shape]
     samp_df = df.iloc[:, ref_shape:ref_shape + bam_shape]
 
+    make_heat_map_and_related_plots_for_individual_genes(reg_df,sample_names,combine_bed_path,bams,results_dir)
     make_heat_map_and_related_plots(reg_df, samp_df, results_dir, combine_bed_path)
 
     # normalize each of the samples
@@ -430,6 +431,51 @@ def make_heat_map_and_related_plots(reg_df, samp_df, results_dir, bed):
     plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
                              'SSD of expected vs observed % GC coverage',
                              results_dir + 'combine_ssd_heat_map.png', 'Blues_r')
+
+
+def calc_gc_from_bed_df(bam, bed_df):
+    percent_count = list(np.zeros((101)))
+    # with that bed file, calc the % GC for all reads in the bam
+    bam_obj = pysam.AlignmentFile(bam, "rb", require_index=False)
+    for i in range(bed_df.shape[0]):
+        bed_contig = bed_df.iloc[i,0]
+        bed_start = int(bed_df.iloc[i,1])
+        bed_end = int(bed_df.iloc[i,2])
+        for read in bam_obj.fetch(contig=bed_contig, start=bed_start, stop=bed_end, until_eof=True):
+            gc_content = calc_percent_gc(read.seq)
+            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+            index = int((gc_content + .001) * 100)
+            percent_count[index] += 1
+    return percent_count
+
+
+def make_heat_map_and_related_plots_for_individual_genes(reg_df, sample_names, bed_path, bams, results_dir):
+    bed_df = pd.read_csv(bed_path, sep='\t', header=None)
+    gene_dict = {}
+    for gene in set(bed_df[4]):
+        sub = bed_df[bed_df[4] == gene]
+        gene_ssds = []
+        gene_ref_coverages = reg_df[gene]
+        gene_ref_total = sum(gene_ref_coverages)
+        for bam in bams:
+            observed = calc_gc_from_bed_df(bam, sub)
+            total = sum(observed)
+            differences = [observed[i] - (total * (gene_ref_coverages[i] / gene_ref_total)) for i in range(len(observed))]
+            ssd = sum([x * x for x in differences])
+            gene_ssds.append(ssd)
+        gene_dict[gene] = gene_ssds
+    ssds = pd.DataFrame(gene_dict)
+    ssds.index = sample_names
+    ssd_both = ssds.copy()
+    ssd_both['lib_prep_technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_both.index)]
+    ssd_both['capture_technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_both.index)]
+    named_indexes = [list(ssd_both['lib_prep_technology'])[i] + ' ' + list(ssd_both['capture_technology'])[i] + ' ' * i
+                     for i in range(ssd_both.shape[0])]
+    ssd_both.index = named_indexes
+
+    plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
+                                         'SSD of expected vs observed % GC coverage',
+                                         results_dir + 'combine_ssd_heat_map_individual_genes.png', 'Blues_r')
 
 
 def plot_ssd_vs_gene_length(ssd, bed_df, results_dir):
