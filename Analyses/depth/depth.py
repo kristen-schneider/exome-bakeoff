@@ -121,10 +121,10 @@ def run_analyses(ref, bams, beds, results_dir):
     df.index = named_indexes
     plot_clustered_heat_map_double_label(df, 'lib_prep_technology', 'capture_technology',
                                          'Depth of coverage',
-                                         results_dir + 'depth.png', 'Blues_r')
+                                         results_dir + 'depth.png', 'Blues')
     plot_clustered_heat_map_double_label(norm_df, 'lib_prep_technology', 'capture_technology',
                                          'Normalized depth of coverage',
-                                         results_dir + 'normalized_depth.png', 'Blues_r')
+                                         results_dir + 'normalized_depth.png', 'Blues')
     return df, norm_df
 
 
