@@ -5,7 +5,7 @@ from read_data_sheet import read_data
 
 def main():
     all_data = read_data(
-        '/Users/kristen/PycharmProjects/exome-bakeoff/kristen_scripts/plotting/csv_files/full_name_by_lp.csv')
+        '/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/59_ACMG/full_name_by_lp.csv')
     plot_heatmap(all_data)
 
 

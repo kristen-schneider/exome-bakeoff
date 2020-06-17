@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from read_data_sheet import read_data
 
-FULL_data_by_LP ='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/full_name_by_lp.csv'
-FULL_data_by_CAP ='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/full_name_by_capture.csv'
-LP_data='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/lp_name.csv'
-CAP_data='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/capture_name.csv'
+FULL_data_by_LP ='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/59_ACMG/full_name_by_lp.csv'
+#FULL_data_by_CAP ='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/oncogenes/full_name_by_capture.csv'
+LP_data='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/59_ACMG/lp_name.csv'
+CAP_data='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/59_ACMG/capture_name.csv'
 
 def main():
     # plot by library prep, color by capture
@@ -13,8 +13,8 @@ def main():
     plot_sample_by_library_prep(sample_data_lp)
     
     # plot by capture, colro by libaray prep
-    sample_data_capture = read_data(FULL_data_by_CAP)
-    plot_sample_by_capture(sample_data_capture)
+    #sample_data_capture = read_data(FULL_data_by_CAP)
+    #plot_sample_by_capture(sample_data_capture)
 
     # plot and color by libaray prep
     lp_data = read_data(LP_data)
@@ -122,7 +122,7 @@ def plot_lp(lp_data):
         plt.setp(box['boxes'][b], facecolor=colors[b])
 
     plt.title('Quality by Library Prep')
-    plt.xticks(np.arange(1, len(lp_data[1])+1), lp_data[0], rotation=65)
+    plt.xticks(np.arange(1, len(lp_data[1])+1), lp_data[1], rotation=65)
     plt.xlim(-1, len(lp_data[1])+1)
     plt.savefig('lib_prep.png')
 
@@ -139,7 +139,7 @@ def plot_capture(capture_data):
         plt.setp(box['boxes'][b], facecolor=colors[b])
 
     plt.title('Quality by Capture')
-    plt.xticks(np.arange(1, len(capture_data[1])+1), capture_data[0], rotation=65)
+    plt.xticks(np.arange(1, len(capture_data[1])+1), capture_data[1], rotation=65)
     plt.xlim(-1, len(capture_data[1])+1)
     plt.savefig('capture.png')
 
