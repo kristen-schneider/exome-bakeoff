@@ -18,7 +18,7 @@ def plot_heatmap(all_data):
     for s in sample_id: y_axis_label.append('-'.join(s.split('-')[0:2]))
 
     plt.figure(figsize=(40, 50))
-    plt.imshow(data,interpolation=None, cmap='coolwarm', vmin=35, vmax=58)
+    plt.imshow(data,interpolation=None, cmap='Blues', vmin=35, vmax=58)
     plt.xticks(np.arange(0, len(genes)), x_axis_label, rotation=65)
     plt.xlabel('GENES')
     plt.yticks(np.arange(0, len(sample_id)), y_axis_label, rotation=0)
