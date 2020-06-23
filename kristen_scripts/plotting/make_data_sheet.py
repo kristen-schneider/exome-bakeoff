@@ -1,7 +1,10 @@
 import os
+<<<<<<< HEAD
+=======
 from alphabetize import alphabetize_full
 from alphabetize import alphabetize_prep
 from alphabetize import alphabetize_capture
+>>>>>>> 071cf845c105a150306b9a88322e497d5b1e93ba
 
 heatmap_metrics_path = '/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/downsampled/heatmap_metrics/'
 
