@@ -8,15 +8,17 @@
 #SBATCH --output=/Users/krsc0813/exome-bakeoff/bash_scripts/3-txt_to_bgzip/conversion_logs/txt_bed_bgzip_driver.out
 #SBATCH --error=/Users/krsc0813/exome-bakeoff/bash_scripts/3-txt_to_bgzip/conversion_logs/txt_bed_bgzip_driver.err
 
-in_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_full_txt/'
-out_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_full_tbi/'
+in_dir='/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/downsampled/metric_files/'
+out_dir='/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/downsampled/metric_files/'
+#in_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_full_txt/'
+#out_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_full_tbi/'
 
 # create the out dir if not exists
 test ! -d $out_dir && mkdir -p $out_dir
 
 for f_txt in `ls $in_dir`
 do
-    if [[ $f_txt == *.txt ]]; then
+    if [[ $f_txt == *_sorted.txt ]]; then
         echo $f_txt
 
         # prepare the name of the output file by removing the pattern '.*' greedily

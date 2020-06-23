@@ -12,6 +12,7 @@ CAP_data='/Users/krsc0813/exome-bakeoff/kristen_scripts/capture_name.csv'
 
 
 def read_data(data_file):
+    print(data_file)
     label_data = []
     metric_data = []
     genes = ''
@@ -19,7 +20,7 @@ def read_data(data_file):
         A = line.split(',')
         
         # genes
-        if len(genes) < 1: genes = line [0]
+        if len(genes) < 1: genes = (',').join(A[1].split(' '))
         
         else:
             # name of full/lp/cap

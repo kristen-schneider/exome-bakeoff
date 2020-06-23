@@ -11,7 +11,7 @@ def main():
         if header == None: header = line
         else:
             A = line.rstrip().split(',')
-            artifact_bed.write(A[0] + '\t' + A[1] + '\t' + str(float(A[1])+1.) + '\n')
+            artifact_bed.write(A[0] + '\t' + A[1] + '\t' + str(int(A[1])+1) + '\n')
     
         
 

@@ -14,4 +14,5 @@ module load samtools
 echo "input file: $1"
 echo "output file: $2"
 
-cat $1 | awk '{OFS="\t"; print $1,$2,$2+1,$3,$4,$5,$6,$7;}' | bgzip -c > $2
+bgzip -c $1 > $2
+#cat $1 | awk '{OFS="\t"; print $1,$2,$2+1,$3,$4,$5,$6,$7;}' | bgzip -c > $2

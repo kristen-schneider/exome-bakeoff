@@ -10,8 +10,11 @@
 
 #pip install pysam
 
-in_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_full_tbi/'
-out_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_full_tbi/'
+in_dir='/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/downsampled/metric_files/'
+out_dir='/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/downsampled/metric_files/'
+
+#in_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_full_tbi/'
+#out_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_full_tbi/'
 
 # create the out dir if not exists
 test ! -d $out_dir && mkdir -p $out_dir
