@@ -1,9 +1,4 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import os
-import numpy as np
-import operator
-#import seaborn
 
 heatmap_metrics_path = '/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/downsampled/heatmap_metrics/'
 
