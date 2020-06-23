@@ -14,15 +14,20 @@ CAP_data='/Users/krsc0813/exome-bakeoff/kristen_scripts/capture_name.csv'
 def read_data(data_file):
     label_data = []
     metric_data = []
+    genes = ''
     for line in open(data_file):
         A = line.split(',')
         
-        # name of full/lp/cap
-        B = A[0].rstrip().lstrip()
-        label_data.append(B)
-        # data
-        C = A[1].rstrip().lstrip().split(' ')
-        data = [float(i) for i in C]
-        metric_data.append(data)
+        # genes
+        if len(genes) < 1: genes = line [0]
+        
+        else:
+            # name of full/lp/cap
+            B = A[0].rstrip().lstrip()
+            label_data.append(B)
+            # data
+            C = A[1].rstrip().lstrip().split(' ')
+            data = [float(i) for i in C]
+            metric_data.append(data)
 
-    return ([label_data, metric_data])
+    return ([genes, label_data, metric_data])

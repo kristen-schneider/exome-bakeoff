@@ -19,9 +19,14 @@ def read_data(data_file):
         A = line.split(',')
 
         # genes
+<<<<<<< HEAD
+        if len(genes) < 1: genes = A[1]
+        
+=======
         if len(genes) < 1:
             genes = A[1].rstrip().lstrip().split(' ')
 
+>>>>>>> 9857124f1a90ed50a6ecf22fc56cdbc220fa7e32
         else:
             # name of full/lp/cap
             B = A[0].rstrip().lstrip()

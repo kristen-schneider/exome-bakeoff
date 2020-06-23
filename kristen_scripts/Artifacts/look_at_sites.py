@@ -14,8 +14,8 @@ def main():
         else:
             print(A)
             chrm = int(A[0])
-            start = float(A[1])
-            end = float(A[2])
+            start = int(A[1])
+            end = int(A[2])
 
             query = [chrm, start, end]
             find_match(query)
@@ -24,19 +24,17 @@ def find_match(query):
     chrm = query[0]
     start = query[1]
     end = query[2]
-    print(chrm)
-    print(start)
-    print(end)
+    #print(type(chrm))
+    #print(start)
+    #print(end)
 
     for mf in os.listdir(metric_files_path):
         if "_sorted.bed" in mf and ".tbi" not in mf:
             header = None
             current_mf = pysam.TabixFile(metric_files_path + mf)
-        
             # debugging
             for row in current_mf.fetch(chrm, start, end, parser=pysam.asBed()):
-                print(row)    
-            
+                print(current_mf)     
             #match = current_mf.fetch(chrm, start, end, parser=pysam.asBed())
             #print(match)
         else: continue
