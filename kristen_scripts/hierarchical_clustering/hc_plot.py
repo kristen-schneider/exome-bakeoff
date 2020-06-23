@@ -12,8 +12,8 @@ def cluster_plot_main():
     cluster_plot(csv_file)
      
 def cluster_plot(csv_file):
-    csv = pd.read_csv(csv_file)
-    
+    csv = pd.read_csv(csv_file, index_col=0)
+
     # color by library prep
     library_prep = csv.pop('library prep tech')
     lut = dict(zip(np.unique(library_prep), 'mkygbr'))
@@ -21,6 +21,7 @@ def cluster_plot(csv_file):
     
     # seaborn clustering
     g = sns.clustermap(csv,
+                       vmin=35, vmax=58,
                        figsize=(25, 30),
                        cmap="coolwarm",
                        row_colors=library_row_colors)
