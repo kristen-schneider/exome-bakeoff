@@ -1,12 +1,9 @@
 import os
-<<<<<<< HEAD
-=======
 from alphabetize import alphabetize_full
 from alphabetize import alphabetize_prep
 from alphabetize import alphabetize_capture
->>>>>>> 071cf845c105a150306b9a88322e497d5b1e93ba
 
-heatmap_metrics_path = '/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/downsampled/heatmap_metrics/'
+heatmap_metrics_path = '/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/strandbias/59_ACMG/downsampled/metric_files/'
 
 def data_sheet_main():
     
@@ -51,7 +48,7 @@ def data_sheet_main():
     #capture_data_file.write('\n\n')
 
 def write_header():
-    f = open('/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/downsampled/heatmap_metrics/AgilentQXT-IDT-0720ME25_S12_L001_quality_hm.txt')
+    f = open('/Users/kristen/PycharmProjects/exome-bakeoff/Analyses/strandbias/59_ACMG/downsampled/metric_files/AgilentQXT-IDT-0720ME25_S12_L001_strandbias.txt')
     
     genes_list = []
     genes_string = ''
