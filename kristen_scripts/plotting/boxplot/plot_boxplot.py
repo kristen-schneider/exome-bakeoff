@@ -4,8 +4,8 @@ from read_data_sheet import read_data
 
 #FULL_data_by_LP ='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/59_ACMG/full_name_by_lp.csv'
 #FULL_data_by_CAP ='/Users/krsc0813/exome-bakeoff/kristen_scripts/plotting/csv_files/oncogenes/full_name_by_capture.csv'
-LP_data='/Users/kristen/PycharmProjects/exome-bakeoff/kristen_scripts/plotting/csv_files/59_ACMG/lp_name.csv'
-CAP_data='/Users/kristen/PycharmProjects/exome-bakeoff/kristen_scripts/plotting/csv_files/59_ACMG/capture_name.csv'
+LP_data='/Users/kristen/PycharmProjects/exome-bakeoff/kristen_scripts/plotting/csv_files/strandbias/59_ACMG/lp_name.csv'
+CAP_data='/Users/kristen/PycharmProjects/exome-bakeoff/kristen_scripts/plotting/csv_files/strandbias/59_ACMG/capture_name.csv'
 
 def main():
     # plot by library prep, color by capture
@@ -151,7 +151,9 @@ def plot_lp(lp_data):
     plt.title('Quality by Library Prep')
     plt.xticks(np.arange(1, len(lp_data[1])+1), lp_data[1], rotation=90)
     plt.xlim(-1, len(lp_data[1])+1)
-    plt.savefig('lib_prep_onco.png')
+    #plt.savefig('lib_prep_59.png')
+    return plt
+
 
 def plot_combined_lb(combined_lp_data):
     plt.figure(figsize=(40, 15))
@@ -165,7 +167,7 @@ def plot_combined_lb(combined_lp_data):
     plt.title('Quality by Library Prep')
     plt.xticks(np.arange(1, len(combined_lp_data[0])+1), combined_lp_data[0], rotation=90)
     plt.xlim(0, len(combined_lp_data[0])+1)
-    plt.savefig('lib_prep_combined_onco.png')
+    #plt.savefig('lib_prep_combined_59.png')
 
 def plot_capture(capture_data):
     plt.figure(figsize=(40, 15))
@@ -185,7 +187,7 @@ def plot_capture(capture_data):
     plt.title('Quality by Capture')
     plt.xticks(np.arange(1, len(capture_data[1])+1), capture_data[1], rotation=90)
     plt.xlim(-1, len(capture_data[1])+1)
-    plt.savefig('capture_onco.png')
+    #plt.savefig('capture_59.png')
 
 
 def plot_combined_capture(combined_capture_data):
@@ -201,7 +203,7 @@ def plot_combined_capture(combined_capture_data):
     plt.title('Quality by Capture')
     plt.xticks(np.arange(1, len(combined_capture_data[0])+1), combined_capture_data[0], rotation=90)
     plt.xlim(0, len(combined_capture_data[0])+1)
-    plt.savefig('capture_combined_onco.png')
+    #plt.savefig('capture_combined_59.png')
 
 
 main()
