@@ -1,28 +1,25 @@
 #!/usr/bin/env bash
 #
 #SBATCH -p short
-#SBATCH --job-name=noise_driver
+#SBATCH --job-name=quality_driver
 #SBATCH --ntasks=1
 #SBATCH --time=4:00:00
 #SBATCH --mem-per-cpu=10G
-#SBATCH --output=/Users/krsc0813/exome-bakeoff/bash_scripts/5-metrics/noise_driver.out
-#SBATCH --error=/Users/krsc0813/exome-bakeoff/bash_scripts/5-metrics/noise_driver.err
+#SBATCH --output=/Users/krsc0813/exome-bakeoff/bash_scripts/5-metrics/quality_driver.out
+#SBATCH --error=/Users/krsc0813/exome-bakeoff/bash_scripts/5-metrics/quality_driver.err
 
-# PURPOSE: computes noise metric
+# PURPOSE: computes quality metric
 
 # commandline arguments
 # 1. pileup_files
 pileups=$1
-# 2. vcf_files
-vcfs=$2
-# 3. regions
-regions=$3
-# 4. output
-out_dir=$4
-#in_dir='/Shares/layer_shared/projects/sequence_analysis/kristen_downsample/align/'
-#out_dir='/Users/krsc0813/exome-bakeoff/Analyses/noise/59_ACMG'
+# 2. regions
+regions=$2
+# 3. output
+out_dir=$3
 #
-echo "starting noise calculation"
+
+echo "starting quality calculation"
 
 for pileup_file in `ls $pileups`
 do
@@ -38,7 +35,7 @@ do
             echo "$out_file already exists, so we skip processing it"
         else
             echo "submitting a job for" $sample
-            sbatch noise_worker.sh $sample $pileups$pileup_file $vcfs $regions $out_dir
+            sbatch quality_worker.sh $sample $pileups$pileup_file $regions $out_dir
         fi 
     #else
         #echo "not using" $pileup_file

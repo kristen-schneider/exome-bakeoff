@@ -17,7 +17,11 @@ metric=$1
 
 # quality
 if [[ $metric == 'quality' ]]; then
-    echo $metric
+    pileups=$2
+    region=$3
+    out_dir=$4
+    echo "computing" $metric
+    sbatch quality_driver.sh $pileups $region $out_dir
 fi
 
 # strand bias
@@ -32,5 +36,5 @@ if [[ $metric == 'noise' ]]; then
     region=$4
     out_dir=$5
     echo "computing" $metric
-    qsub noise_driver.sh $pileups $vcfs $region $outdir
+    sbatch noise_driver.sh $pileups $vcfs $region $out_dir
 fi
