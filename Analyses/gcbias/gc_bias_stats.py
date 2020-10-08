@@ -75,7 +75,7 @@ def get_ref_region_df(ref, bed):
         print('Loading Reference and Bed Cache % GC info')
         return pickle.load(open(cache_name, 'rb'))
     print('Generating Reference and Bed Cache % GC info')
-    bed_df = pd.read_csv(bed, sep='\t',header=None)
+    bed_df = pd.read_csv(bed, sep='\t', header=None)
     bed_df.iloc[:, 0] = [str(x) for x in bed_df.iloc[:, 0]]
     pickle.dump(bed_df, open('bed_df.pickle', 'wb'))
     pickle.dump(ref, open('ref.pickle', 'wb'))
@@ -142,6 +142,39 @@ def calc_gc(bam, bed):
             index = int((gc_content + .001) * 100)
             percent_count[index] += 1
     return percent_count
+
+
+# get the count for the BAMs
+def calc_gc_per_site(bam, bed, out):
+    info = {'chr': [], 'start': [], 'end': [], 'avg_gc': [], 'gene': []}
+    # with that bed file, calc the % GC for all reads in the bam
+    bam_obj = pysam.AlignmentFile(bam, "rb", require_index=False)
+    for line in open(bed, 'r'):
+        bed_line = line.split('\t')
+        bed_contig = bed_line[0]
+        bed_start = int(bed_line[1])
+        bed_end = int(bed_line[2])
+        gene = bed_line[-1].strip()
+        count = 0
+        gc = 0
+        for read in bam_obj.fetch(contig=bed_contig, start=bed_start, stop=bed_end, until_eof=True):
+            gc_content = calc_percent_gc(read.seq)
+            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+            index = int((gc_content + .001) * 100)
+            gc += index
+            count += 1
+        info['chr'].append(bed_contig)
+        info['start'].append(bed_start)
+        info['end'].append(bed_end)
+        info['gene'].append(gene)
+        # make sure there were some reads at this position
+        if count != 0:
+            info['avg_gc'].append(gc / count)
+        else:
+            info['avg_gc'].append('N\A')
+    df = pd.DataFrame(info)
+    df.to_csv(out, sep='\t', index=False)
+    return df
 
 
 def get_bams_gc_df(bams, bed):
@@ -232,6 +265,8 @@ def run_analyses(ref, bams, beds, results_dir):
     df, ref_shape, bam_shape = get_gc_bias_df(ref, combine_bed_path, bams)
     df['ref_norm'] = df['ref_count'] / sum(df['ref_count'])
     df['region_norm'] = df['59 genes count'] / sum(df['59 genes count'])
+    print(df.columns)
+    quit()
     num_previously_added_cols = 2
     pickle.dump(df, open('samples_run_analyses.pickle', 'wb'))
     # split the sample named into their library prep and capture tech
@@ -243,7 +278,7 @@ def run_analyses(ref, bams, beds, results_dir):
     reg_df = df.iloc[:, 3:ref_shape]
     samp_df = df.iloc[:, ref_shape:ref_shape + bam_shape]
 
-    make_heat_map_and_related_plots_for_individual_genes(reg_df,sample_names,combine_bed_path,bams,results_dir)
+    make_heat_map_and_related_plots_for_individual_genes(reg_df, sample_names, combine_bed_path, bams, results_dir)
     make_heat_map_and_related_plots(reg_df, samp_df, results_dir, combine_bed_path)
 
     # normalize each of the samples
@@ -306,7 +341,7 @@ Returns pandas DataFrame, list of column names, list of row names
 
 
 def get_ssd_heat_map_data(regions_df, samples_df):
-    pickle.dump(regions_df,open('regions_df_get_ssd_heat_map_data.pickle','wb'))
+    pickle.dump(regions_df, open('regions_df_get_ssd_heat_map_data.pickle', 'wb'))
     pickle.dump(samples_df, open('samples_df_get_ssd_heat_map_data.pickle', 'wb'))
     ssd_dict = {}
     tidy = {}
@@ -429,8 +464,8 @@ def make_heat_map_and_related_plots(reg_df, samp_df, results_dir, bed):
     ssd_both.index = named_indexes
 
     plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
-                             'SSD of expected vs observed % GC coverage',
-                             results_dir + 'combine_ssd_heat_map.png', 'Blues_r')
+                                         'SSD of expected vs observed % GC coverage',
+                                         results_dir + 'combine_ssd_heat_map.png', 'Blues_r')
 
 
 def calc_gc_from_bed_df(bam, bed_df):
@@ -438,9 +473,9 @@ def calc_gc_from_bed_df(bam, bed_df):
     # with that bed file, calc the % GC for all reads in the bam
     bam_obj = pysam.AlignmentFile(bam, "rb", require_index=False)
     for i in range(bed_df.shape[0]):
-        bed_contig = bed_df.iloc[i,0]
-        bed_start = int(bed_df.iloc[i,1])
-        bed_end = int(bed_df.iloc[i,2])
+        bed_contig = bed_df.iloc[i, 0]
+        bed_start = int(bed_df.iloc[i, 1])
+        bed_end = int(bed_df.iloc[i, 2])
         for read in bam_obj.fetch(contig=bed_contig, start=bed_start, stop=bed_end, until_eof=True):
             gc_content = calc_percent_gc(read.seq)
             # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
@@ -460,7 +495,8 @@ def make_heat_map_and_related_plots_for_individual_genes(reg_df, sample_names, b
         for bam in bams:
             observed = calc_gc_from_bed_df(bam, sub)
             total = sum(observed)
-            differences = [observed[i] - (total * (gene_ref_coverages[i] / gene_ref_total)) for i in range(len(observed))]
+            differences = [observed[i] - (total * (gene_ref_coverages[i] / gene_ref_total)) for i in
+                           range(len(observed))]
             ssd = sum([x * x for x in differences])
             gene_ssds.append(ssd)
         gene_dict[gene] = gene_ssds
@@ -497,7 +533,7 @@ def plot_ssd_vs_gene_length(ssd, bed_df, results_dir):
     plt.savefig(results_dir + 'gc_ssd_vs_gene_length.png')
     plt.clf()
     cor_coe = np.corrcoef(list(ssd_means.values()), list(gene_lengths.values()))[0, 1]
-    with open(results_dir + 'gene_size_ssd_correlation.txt','w') as file:
+    with open(results_dir + 'gene_size_ssd_correlation.txt', 'w') as file:
         file.write('Pearson product-moment correlation coefficient: ' + str(cor_coe))
     # box plots
     # sort the genes by their length
@@ -506,96 +542,56 @@ def plot_ssd_vs_gene_length(ssd, bed_df, results_dir):
     ssd_sorted = ssd.reindex(sorted_gene_names, axis=1)
     fig, ax = plt.subplots()
     fig.set_size_inches(15, 10)
-    ssd_sorted.plot(kind='box',ax=ax)
-    ax.set_xticklabels(ax.get_xticklabels(),rotation=60)
+    ssd_sorted.plot(kind='box', ax=ax)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=60)
     plt.ylabel('Observed vs expected GC content SSD')
     plt.xlabel('Genes, sorted by ascending length')
     plt.savefig(results_dir + 'gc_ssd_vs_gene_length_boxplots.png')
 
+"""
+This tool calculates the % GC for each genome range in a regions bed file
+To use this as a commandline tool it requires 3 parameters:
+1. path to bam file
+2. path to regions file in bed format
+3. name of output file
+"""
 
 if __name__ == "__main__":
-    ref = sys.argv[1]
-    bam_template = sys.argv[2]
-    bed_template = sys.argv[3]
-    res = sys.argv[4]
-
-    # ref = '/Users/michael/TESTBAMs/human_g1k_v37.fasta'
-    # bam_template = '/Users/michael/TESTBAMs/'
-    # bed_template = '/Users/michael/TESTBAMs/'
-    # res = '/Users/michael/BakeOff/Results/GCBias/'
-
-    # make there paths are not missing / on the end
-    if bam_template[-1] != '/':
-        bam_template += '/'
-    if bed_template[-1] != '/':
-        bed_template += '/'
-
-    # make list of all bams
-    bams = []
-    for file in listdir(bam_template):
-        if file[-4:] == '.bam':
-            bams.append(bam_template + file)
-
-    # make list of all beds
-    beds = []
-    for file in listdir(bed_template):
-        if file[-4:] == '.bed':
-            beds.append(bed_template + file)
-
-    # run the analysis
-    run_analyses(ref, bams, beds, res)
+    bam = sys.argv[1]
+    bed = sys.argv[2]
+    out = sys.argv[3]
+    calc_gc_per_site(bam,bed,out)
 
 #
-# # plot debugging code
-# bed = '/Users/michael/TESTBAMs/acmg_all_59.bed'
-# df = pickle.load(open('df.pickle', 'rb'))
-# reg_df = df.iloc[:, 3:61]
-# samp_df = df.iloc[:, 61:129]
-# results_dir = ''
+# if __name__ == "__main__":
+#     #commandline params : /Users/michael/TESTBAMs/human_g1k_v37.fasta /Users/michael/TESTBAMs/ /Users/michael/TESTBAMs/ /Users/michael/BakeOff/Results/gcbias/
+#     ref = sys.argv[1]
+#     bam_template = sys.argv[2]
+#     bed_template = sys.argv[3]
+#     res = sys.argv[4]
 #
-# ssd, col_names, row_names = get_ssd_heat_map_data(reg_df, samp_df)
+#     # ref = '/Users/michael/TESTBAMs/human_g1k_v37.fasta'
+#     # bam_template = '/Users/michael/TESTBAMs/'
+#     # bed_template = '/Users/michael/TESTBAMs/'
+#     # res = '/Users/michael/BakeOff/Results/GCBias/'
 #
-# ssd_both = ssd.copy()
-# ssd_both['lib_prep_technology'] = [re.sub('-.*-.*', '', x) for x in list(ssd_both.index)]
-# ssd_both['capture_technology'] = [re.sub('.*-(\\w+)-.*', '\\1', x) for x in list(ssd_both.index)]
-# named_indexes = [list(ssd_both['lib_prep_technology'])[i] + ' ' + list(ssd_both['capture_technology'])[i] + ' ' * i for i in range(ssd_both.shape[0])]
-# ssd_both.index = named_indexes
+#     # make there paths are not missing / on the end
+#     if bam_template[-1] != '/':
+#         bam_template += '/'
+#     if bed_template[-1] != '/':
+#         bed_template += '/'
 #
-# bed_df = pd.read_csv(bed,sep='\t',header=None)
+#     # make list of all bams
+#     bams = []
+#     for file in listdir(bam_template):
+#         if file[-4:] == '.bam':
+#             bams.append(bam_template + file)
 #
-# fig, ax = plt.subplots()
-# fig.set_size_inches(10, 10)
-# gene_lengths = {}
-# ssd_means = {}
-# for gene in col_names:
-#     sub = bed_df[bed_df[4] == gene]
-#     # get the length, each end - start summed together
-#     length = sum(sub[2] - sub[1])
-#     if gene != 'MYL2' or True:
-#         gene_lengths[gene] = length
-#         ssd_means[gene] = sum(ssd[gene]) / ssd.shape[1]
-#     plt.scatter(([length] * ssd.shape[0]), ssd[gene])
-# plt.ylabel('Observed vs expected GC content SSD')
-# plt.xlabel('Log gene length')
-# ax.set_xscale('log')
-# plt.savefig('delete.png')
+#     # make list of all beds
+#     beds = []
+#     for file in listdir(bed_template):
+#         if file[-4:] == '.bed':
+#             beds.append(bed_template + file)
 #
-# cor_coe = np.corrcoef(list(ssd_means.values()),list(gene_lengths.values()))[0,1]
-#
-# #
-# # plt.clf()
-# # sorted_gene_lengths = {k: v for k, v in sorted(gene_lengths.items(), key=lambda item: item[1])}
-# # sorted_gene_names = list(sorted_gene_lengths.keys())
-# # ssd_sorted = ssd.reindex(sorted_gene_names, axis=1)
-# # fig, ax = plt.subplots()
-# # fig.set_size_inches(15, 10)
-# # ssd_sorted.plot(kind='box',ax=ax)
-# # ax.set_xticklabels(ax.get_xticklabels(),rotation=60)
-# # plt.ylabel('Observed vs expected GC content SSD')
-# # plt.xlabel('Genes, sorted by ascending length')
-# # plt.savefig('delete.png')
-# #
-# # #
-# # # plot_clustered_heat_map_double_label(ssd_both, 'lib_prep_technology', 'capture_technology',
-# # #                          'SSD of expected vs observed % GC coverage',
-# # #                          results_dir + 'combine_ssd_heat_map.png', 'Blues_r')
+#     # run the analysis
+#     run_analyses(ref, bams, beds, res)
