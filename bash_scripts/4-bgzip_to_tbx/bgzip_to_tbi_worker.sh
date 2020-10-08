@@ -8,6 +8,8 @@
 #SBATCH --output=/Users/krsc0813/exome-bakeoff/bash_scripts/4-bgzip_to_tbx/conversion_logs/bgzip_to_tbi_worker.out
 #SBATCH --error=/Users/krsc0813/exome-bakeoff/bash_scripts/4-bgzip_to_tbx/conversion_logs/bgzip_to_tbi_worker.err
 
+module load samtools
+
 echo "input file: $1"
 echo "output file: $2"
 

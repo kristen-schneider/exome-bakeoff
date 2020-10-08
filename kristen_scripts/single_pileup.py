@@ -10,11 +10,13 @@ def main_single_pileup(tbx_pileup_file, regions_dir, metrics_list, sample_name):
 def read_regions(tbx_pileup_file, regions_dir, metrics_list, sample_name):
 
     # regions_dir
-    region = regions_dir.split('/')[7]
+    region = regions_dir.split('/')[7:9]
+
+    print(region)
 
     # open files to store metrics for plotting
     for metric in metrics_list:
-        metric_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/" + metric + "/" + region + "/downsampled/metric_files/" + sample_name + "_" + metric + ".txt", 'a')
+        metric_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/" + metric + "/" + region[0] + "/" + region[1] + "/metric_files/" + sample_name + "_" + metric + ".txt", 'a')
         metric_output_txt.truncate(0)
 
     #regions_file_read = open(regions_dir, 'r')
@@ -43,7 +45,7 @@ def read_regions(tbx_pileup_file, regions_dir, metrics_list, sample_name):
                 end = row[2]
 
                 if "quality" in metrics_list:
-                    quality_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/" + metric + "/" + region + "/downsampled/metric_files/" + sample_name + "_" + metric + ".txt", 'a')
+                    quality_output_txt = open("/Users/krsc0813/exome-bakeoff/Analyses/" + metric + "/" + region[0] + "/" + region[1] + "/metric_files/" + sample_name + "_" + metric + ".txt", 'a')
 
                     quality = main_quality(row)
                     # format: chrm, start, end, quality_score
