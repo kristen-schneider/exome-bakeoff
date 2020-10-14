@@ -145,7 +145,7 @@ def calc_gc(bam, bed):
 
 
 # get the count for the BAMs
-def calc_gc_per_site(bam, bed, out):
+def calc_gc_per_site(bam, bed):
     info = {'chr': [], 'start': [], 'end': [], 'avg_gc': [], 'gene': []}
     # with that bed file, calc the % GC for all reads in the bam
     bam_obj = pysam.AlignmentFile(bam, "rb", require_index=False)
@@ -173,7 +173,6 @@ def calc_gc_per_site(bam, bed, out):
         else:
             info['avg_gc'].append('N\A')
     df = pd.DataFrame(info)
-    df.to_csv(out, sep='\t', index=False)
     return df
 
 
@@ -548,6 +547,35 @@ def plot_ssd_vs_gene_length(ssd, bed_df, results_dir):
     plt.xlabel('Genes, sorted by ascending length')
     plt.savefig(results_dir + 'gc_ssd_vs_gene_length_boxplots.png')
 
+def get_ref_bed_gc_content(ref,bed):
+    bed_df = pd.read_csv(bed, sep='\t', header=None)
+    bed_df.iloc[:, 0] = [str(x) for x in bed_df.iloc[:, 0]]
+    out_data = {'chr':[],'start':[],'end':[],'gene':[],'gc':[],}
+    for name, seq in read_fasta(open(ref)):
+        c, b, e = get_chrom_begin_end(name)
+        sub_df = bed_df[bed_df.iloc[:, 0] == c]
+        for i in range(sub_df.shape[0]):
+            start = sub_df.iloc[i, 1]
+            end = sub_df.iloc[i, 2]
+            gene = sub_df.iloc[i, -1]
+            chrom = sub_df.iloc[i, 0]
+            # get the reference sequence for this region of the genome
+            gene_seq = seq[start-b:end-b]
+            gc_content = calc_percent_gc(gene_seq)
+            # + .001 is to account for floating point rounding errors in python 0.58 is really 57.99999999
+            gc_int = int((gc_content + .001) * 100)
+            out_data['chr'].append(chrom)
+            out_data['start'].append(start)
+            out_data['end'].append(end)
+            out_data['gene'].append(gene)
+            out_data['gc'].append(gc_int)
+    return pd.DataFrame(out_data)
+
+
+
+
+
+
 """
 This tool calculates the % GC for each genome range in a regions bed file
 To use this as a commandline tool it requires 3 parameters:
@@ -560,38 +588,15 @@ if __name__ == "__main__":
     bam = sys.argv[1]
     bed = sys.argv[2]
     out = sys.argv[3]
-    calc_gc_per_site(bam,bed,out)
-
-#
-# if __name__ == "__main__":
-#     #commandline params : /Users/michael/TESTBAMs/human_g1k_v37.fasta /Users/michael/TESTBAMs/ /Users/michael/TESTBAMs/ /Users/michael/BakeOff/Results/gcbias/
-#     ref = sys.argv[1]
-#     bam_template = sys.argv[2]
-#     bed_template = sys.argv[3]
-#     res = sys.argv[4]
-#
-#     # ref = '/Users/michael/TESTBAMs/human_g1k_v37.fasta'
-#     # bam_template = '/Users/michael/TESTBAMs/'
-#     # bed_template = '/Users/michael/TESTBAMs/'
-#     # res = '/Users/michael/BakeOff/Results/GCBias/'
-#
-#     # make there paths are not missing / on the end
-#     if bam_template[-1] != '/':
-#         bam_template += '/'
-#     if bed_template[-1] != '/':
-#         bed_template += '/'
-#
-#     # make list of all bams
-#     bams = []
-#     for file in listdir(bam_template):
-#         if file[-4:] == '.bam':
-#             bams.append(bam_template + file)
-#
-#     # make list of all beds
-#     beds = []
-#     for file in listdir(bed_template):
-#         if file[-4:] == '.bed':
-#             beds.append(bed_template + file)
-#
-#     # run the analysis
-#     run_analyses(ref, bams, beds, res)
+    ref = sys.argv[4]
+    ref_region_cache_name = bed.split('/')[-1] + ref.split('/')[-1] + '_ref_region_temp.csv'
+    if os.path.exists(ref_region_cache_name) and False:
+        print('Loading Ref GC DF')
+        ref_df = pd.read_csv(ref_region_cache_name)
+    else:
+        print('Making Ref GC DF')
+        ref_df = get_ref_bed_gc_content(ref,bed)
+        ref_df.to_csv(ref_region_cache_name)
+    gc_df = calc_gc_per_site(bam, bed)
+    gc_df['diff_from_ref'] = gc_df['avg_gc'] - ref_df['gc']
+    gc_df.to_csv(out, sep='\t', index=False)
