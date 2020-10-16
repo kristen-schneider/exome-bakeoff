@@ -574,8 +574,13 @@ def get_ref_bed_gc_content(ref,bed):
 
 
 def subtract(items1, items2):
-    return [float(items1[i]) - float(items1[i]) if str(items1[i]).isnumeric() and str(items2[i]).isnumeric() else 'N\A' for i in range(len(items1))]
-
+    items = []
+    for i in range(len(items1)):
+        try:
+            items.append(float(items1[i]) - float(items2[i]))
+        except:
+            items.append('N\A')
+    return items
 
 
 """
@@ -600,5 +605,7 @@ if __name__ == "__main__":
         ref_df = get_ref_bed_gc_content(ref,bed)
         ref_df.to_csv(ref_region_cache_name)
     gc_df = calc_gc_per_site(bam, bed)
+    print(list(gc_df['avg_gc']))
+    print(type(list(gc_df['avg_gc'])[0]))
     gc_df['diff_from_ref'] = subtract(list(gc_df['avg_gc']), list(ref_df['gc']))
     gc_df.to_csv(out, sep='\t', index=False)
