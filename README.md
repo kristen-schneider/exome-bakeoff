@@ -4,4 +4,4 @@
 code block
 ```
 
-<\p> starting git repo with arianna
+</p> starting git repo with arianna
