@@ -4,4 +4,4 @@
 code block
 ```
 
-</p> starting git repo with arianna
+</p> Starting git repo with Arianna McCarty
