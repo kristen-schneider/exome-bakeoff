@@ -22,3 +22,5 @@ out_dir=$4
 
 # make noise metric files
 python quality.py $pileup $regions $out_dir > $out_dir$sample"_quality.txt"
+
+#echo $out_dir$sample"_quality.txt"
