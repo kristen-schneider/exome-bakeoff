@@ -5,8 +5,8 @@
 #SBATCH --ntasks=1
 #SBATCH --time=4:00:00
 #SBATCH --mem-per-cpu=10G
-#SBATCH --output=Users/armc4884/exome-bakeoff/bash_scripts/5-metrics/strandbias_driver.out
-#SBATCH --error=Users/armc4884/exome-bakeoff/bash_scripts/5-metrics/strandbias_driver.err
+#SBATCH --output=/Users/krsc0813/exome-bakeoff/bash_scripts/5-metrics/strandbias_driver.out
+#SBATCH --error=/Users/krsc0813/exome-bakeoff/bash_scripts/5-metrics/strandbias_driver.err
 
 # PURPOSE: Computes strandbias metric
 
@@ -37,8 +37,9 @@ do
 		echo "$out_file already exists, so we skip processing it"
 	else
 		echo "Submitting a job for" $sample
-		sbatch strandbias_worker.sh $sample $pileups$pileup_file $regions $out_dir
+		sbatch ari_sb_worker.sh $sample $pileups$pileup_file $regions $out_dir
 	fi
     #else
 	#echo "not using" $pileup_file
     fi
+done

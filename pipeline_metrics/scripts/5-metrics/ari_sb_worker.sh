@@ -1,5 +1,3 @@
-# Let's see how this goes!
-
 #!/usr/bin/env bash
 #
 #SBATCH -p short
