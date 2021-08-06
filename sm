@@ -1,0 +1,53 @@
+# DIRECTORIES
+scripts_base_dir = '/scratch/Users/krsc0813/exome-bakeoff/'
+scripts_metric_dir = '/scratch/Users/krsc0813/exome-bakeoff/pipeline_metrics/scripts/5-metrics/'
+data_base_dir = '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/'
+pileup_base_dir = '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/mpileup_downsample_tbi/'
+regions_base_dir = '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/regions/59_ACMG/'
+out_base_dir = '/scratch/Users/krsc0813/exome-bakeoff/analyses/'
+
+rule all:
+    input:
+        out_base_dir + 'quality.done',
+        out_base_dir + 'strandbias.done',
+        out_base_dir + 'noise.done'
+
+rule quality:
+    input:
+        '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/mpileup_downsample_tbi/AgilentQXT-IDT-0720ME25_S12_L001.bed.gz',
+        '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/regions/59_ACMG/',
+        out_base_dir + 'quality/'
+    
+    output:
+        out_base_dir + 'quality.done'
+    
+    shell:
+        "python3 {input}" \
+        ' && touch ' + out_base_dir + 'quality.done'
+
+rule strandbias:
+    input:
+        '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/mpileup_downsample_tbi/AgilentQXT-IDT-0720ME25_S12_L001.bed.gz',
+        '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/regions/59_ACMG/',
+        out_base_dir + 'quality/'
+    
+    output:
+        out_base_dir + 'strandbias.done'
+    
+    shell:
+        "python3 {input}" \
+        ' && touch ' + out_base_dir + 'strandbias.done'
+
+
+rule noise:
+    input:
+        '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/mpileup_downsample_tbi/AgilentQXT-IDT-0720ME25_S12_L001.bed.gz',
+        '/Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/regions/59_ACMG/',
+        out_base_dir + 'quality/'
+    
+    output:
+        out_base_dir + 'noise.done'
+    
+    shell:
+        "python3 {input}" \
+        ' && touch ' + out_base_dir + 'noise.done'
