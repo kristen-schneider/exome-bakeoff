@@ -12,8 +12,6 @@
 # commandline arguments
 # 1. metric
 metric=$1
-#in_dir='/Shares/layer_shared/projects/sequence_analysis/kristen_downsample/align/'
-#out_dir='/Users/krsc0813/exome-bakeoff/Analyses/noise/59_ACMG'
 
 # quality
 if [[ $metric == 'quality' ]]; then

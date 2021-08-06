@@ -24,23 +24,3 @@ out_dir=$4
 
 sbatch quality_python.sh $sample $pileup $regions $out_dir
 
-#for vcf_file in `ls $vcfs`
-#do
-    #echo $pileup
-    #echo $vcfs
-    #echo $regions
-    #echo $out_dir        
-
-#    if [[ $vcf_file == *"$sample"* ]]; then 
-#        echo $sample
-#        echo $pileup
-#        echo $vcf_file
-#        
-#        sbatch noise_python.sh $sample $pileup $vcfs $regions $out_dir
-#        #python noise.py $pileup $vcfs $regions $out_dir > $sample.txt 
-#    fi
-#done
-#ref=/Shares/layer_shared/ref/hg37/human_g1k_v37.fasta.gz
-
-#samtools view -T $ref -b -o $2 $1 \
-    #&& samtools index $2

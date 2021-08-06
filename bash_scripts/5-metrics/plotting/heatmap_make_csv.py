@@ -1,6 +1,6 @@
 import os
 
-heatmap_metric_dir='/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/heatmap_files/'
+heatmap_metric_dir='/scratch/Shares/layer/projects/chco/kristen/exome-bakeoff/Analysis/noise/59_ACMG/heatmap_files/'
 samples_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_downsample_tbi/'
 genes_dir='/Shares/layer_shared/projects/chco/exome_bakeoff/regions/59_ACMG/'
 
@@ -27,7 +27,7 @@ def main():
 
 def write_csv(samples_list, genes_list, heatmap_dict):
     # TO CHANGE
-    csv_f = open('quality_59ACMG.csv', 'w')
+    csv_f = open('noise_59ACMG.csv', 'w')
     
     # header
     csv_f.write('sample name')

@@ -16,11 +16,11 @@ sample=$1
 pileup=$2
 # 3. vcf_files
 vcfs=$3
-# 4. regions
-regions=$4
+# 4. gene_bed
+gene_bed=$4
 # 5. output
 out_dir=$5
 
 
 # make noise metric files
-python noise.py $pileup $vcfs $regions $out_dir > $out_dir$sample"_noise.txt"
+python noise.py $sample $pileup $vcfs $gene_bed $out_dir > $out_dir$sample"_noise.txt"

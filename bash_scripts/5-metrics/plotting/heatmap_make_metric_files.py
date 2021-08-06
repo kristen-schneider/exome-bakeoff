@@ -2,14 +2,13 @@ import os
 
 samples_dir = '/Shares/layer_shared/projects/chco/exome_bakeoff/mpileup_downsample_tbi/'
 regions_dir = '/Shares/layer_shared/projects/chco/exome_bakeoff/regions/59_ACMG/'
-metrics_dir = '/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/metric_files/'
+metrics_dir = '/scratch/Shares/layer/projects/chco/kristen/exome-bakeoff/Analysis/noise/59_ACMG/metric_files/'
 
 def main():
     for m_file in os.listdir(metrics_dir):
         metrics_file = open(metrics_dir+m_file, 'r')
-        
         sample_name = ('_').join(m_file.split('_')[0:3])
-        heatmap_metrics_file = open('/Users/krsc0813/exome-bakeoff/Analyses/quality/59_ACMG/heatmap_files/'
+        heatmap_metrics_file = open('/scratch/Shares/layer/projects/chco/kristen/exome-bakeoff/Analysis/noise/59_ACMG/heatmap_files/'
             +sample_name+'_heatmap.txt', 'w')
 
         sample_dict = dict()
