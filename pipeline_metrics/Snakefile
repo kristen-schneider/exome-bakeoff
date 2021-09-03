@@ -1,0 +1,137 @@
+region = 'oncogenes'
+
+base_dir = '/Shares/layer_shared/projects/chco/exome-bakeoff/pipeline_metrics'
+#base_dir = '/Shares/layer_shared/projects/chco/exome_bakeoff/pipeline/'
+
+quality_metric_files = base_dir + '/analyses/quality/' + region + '/metric_files/'
+strandbias_metric_files = base_dir + '/analyses/strandbias/' + region + '/metric_files/'
+noise_metric_files = base_dir + '/analyses/noise/' + region + '/metric_files/'
+gcbias_metric_files = base_dir + '/analyses/gcbias/' + region + '/metric_files/'
+
+rule all:
+    input:
+        base_dir + '/analyses/quality/' + region + '/mean_per_gene/mean_per_gene.done',
+        base_dir + '/analyses/quality/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done',
+        base_dir + '/analyses/strandbias/' + region + '/mean_per_gene/mean_per_gene.done',        
+        base_dir + '/analyses/strandbias/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done', 
+        base_dir + '/analyses/noise/' + region + '/mean_per_gene/mean_per_gene.done',
+        base_dir + '/analyses/noise/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done',
+        base_dir + '/analyses/gcbias/' + region + '/mean_per_gene/mean_per_gene.done', 
+        base_dir + '/analyses/gcbias/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done',
+        base_dir + 'analyses/F1score/F1_score.done'
+
+# QUALITY
+rule quality_mean:
+    input:
+        '/Shares/layer_shared/projects/chco/exome-bakeoff/pipeline_metrics/analyses/quality/oncogenes/metric_files/metric_files.done'
+        #base_dir + 'analyses/quality/' + region + '/metric_files/metric_files.done'
+    output:
+        base_dir + '/analyses/quality/' + region + '/mean_per_gene/mean_per_gene.done'
+    shell:
+        'python ' + base_dir + '/scripts/utils/aggregate_by_gene.py' \
+        ' --input_path "' + quality_metric_files + '/*.txt" ' \
+        ' --op mean ' \
+        ' --out_dir ' + base_dir + '/analyses/quality/' + region + '/mean_per_gene/ '
+        ' && touch ' + base_dir + '/analyses/quality/' + region + '/mean_per_gene/mean_per_gene.done'
+
+rule quality_mean_per_tech_combo:
+    input:
+        base_dir + '/analyses/quality/' + region + '/mean_per_gene/mean_per_gene.done'
+    output:
+        base_dir + '/analyses/quality/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done'
+    shell:
+        'python ' + base_dir + '/scripts/utils/aggregate_genes.py' \
+        ' --input_path "' + base_dir + '/analyses/quality/' + region + '/mean_per_gene/*.txt"' \
+        ' --out_dir ' + base_dir + '/analyses/quality/' + region + '/mean_per_tech_combo/'
+        ' && touch ' + base_dir + '/analyses/quality/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done'
+
+# STRAND BIAS
+rule strandbias_mean:
+    input:
+        base_dir + 'analyses/strandbias/' + region + '/metric_files/metric_files.done'
+    output:
+        base_dir + '/analyses/strandbias/' + region + '/mean_per_gene/mean_per_gene.done'
+    shell:
+        'python ' + base_dir + '/scripts/utils/aggregate_by_gene.py' \
+        ' --input_path "' + strandbias_metric_files + '/*.txt" ' \
+        ' --op mean ' \
+        ' --out_dir ' + base_dir + '/analyses/strandbias/' + region + '/mean_per_gene/ '
+        ' && touch ' + base_dir + '/analyses/strandbias/' + region + '/mean_per_gene/mean_per_gene.done'
+
+rule strandbias_mean_per_tech_combo:
+    input:
+        base_dir + '/analyses/strandbias/' + region + '/mean_per_gene/mean_per_gene.done'
+    output:
+        base_dir + '/analyses/strandbias/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done'
+    shell:
+        'python ' + base_dir + '/scripts/utils/aggregate_genes.py' \
+        ' --input_path "' + base_dir + '/analyses/strandbias/' + region + '/mean_per_gene/*.txt"' \
+        ' --out_dir ' + base_dir + '/analyses/strandbias/' + region + '/mean_per_tech_combo/'
+        ' && touch ' + base_dir + '/analyses/strandbias/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done'
+
+# NOISE
+rule noise_mean:
+    input:
+        base_dir + 'analyses/noise/' + region + '/metric_files/metric_files.done'
+    output:
+        base_dir + '/analyses/noise/' + region + '/mean_per_gene/mean_per_gene.done'
+    shell:
+        'python ' + base_dir + '/scripts/utils/aggregate_by_gene.py' \
+        ' --input_path "' + noise_metric_files + '/*.txt" ' \
+        ' --op mean ' \
+        ' --out_dir ' + base_dir + '/analyses/noise/' + region + '/mean_per_gene/ '
+        ' && touch ' + base_dir + '/analyses/noise/' + region + '/mean_per_gene/mean_per_gene.done'
+
+rule noise_mean_per_tech_combo:
+    input:
+        base_dir + '/analyses/noise/' + region + '/mean_per_gene/mean_per_gene.done'
+    output:
+        base_dir + '/analyses/noise/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done'
+    shell:
+        'python ' + base_dir + '/scripts/utils/aggregate_genes.py' \
+        ' --input_path "' + base_dir + '/analyses/noise/' + region + '/mean_per_gene/*.txt"' \
+        ' --out_dir ' + base_dir + '/analyses/noise/' + region + '/mean_per_tech_combo/'
+        ' && touch ' + base_dir + '/analyses/noise/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done'
+
+# GC BIAS
+rule gcbias_mean:
+    input:
+        base_dir + 'analyses/gcbias/' + region + '/metric_files/metric_files.done'
+    output:
+        base_dir + '/analyses/gcbias/' + region + '/mean_per_gene/mean_per_gene.done'
+    shell:
+        'python ' + base_dir + '/scripts/utils/aggregate_by_gene.py' \
+        ' --input_path "' + gcbias_metric_files + '/*.txt" ' \
+        ' --op mean ' \
+        ' --out_dir ' + base_dir + '/analyses/gcbias/' + region + '/mean_per_gene/ '
+        ' && touch ' + base_dir + '/analyses/gcbias/' + region + '/mean_per_gene/mean_per_gene.done'
+
+rule gcbias_mean_per_tech_combo:
+    input:
+        base_dir + '/analyses/gcbias/' + region + '/mean_per_gene/mean_per_gene.done'
+    output:
+        base_dir + '/analyses/gcbias/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done'
+    shell:
+        'python ' + base_dir + '/scripts/utils/aggregate_genes.py' \
+        ' --input_path "' + base_dir + '/analyses/gcbias/' + region + '/mean_per_gene/*.txt"' \
+        ' --out_dir ' + base_dir + '/analyses/gcbias/' + region + '/mean_per_tech_combo/'
+        ' && touch ' + base_dir + '/analyses/gcbias/' + region + '/mean_per_tech_combo/mean_per_tech_combo.done'
+
+# F1 Score
+rule f1_score:
+    input:
+	'Shares/layer_shared/projects/chco/exome_bakeoff-GITERROR/happy/results_GIAB_reg/F1_scores.done'
+       # '/Shares/layer_shared/projects/chco/exome_bakeoff/happy/results_GIAB_reg/F1_scores.done'
+    output:
+        base_dir + 'analyses/F1score/F1_score.done'
+    shell:
+        'python ' + base_dir + '/scripts/5-metrics/F1_get_scores.py' \
+        ' --in_dir "' + '/Shares/layer_shared/projects/chco/exome_bakeoff/happy/results_GIAB_reg/*summary*"' \
+        ' --sample GIAB' 
+        ' --out_dir ' + base_dir + 'analyses/F1score/'
+        ' && touch ' + base_dir + 'analyses/F1score/F1_score.done'
+
+## FINAL OUTPUT FILES
+# tech sample combo
+
+
